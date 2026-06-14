@@ -1,22 +1,5 @@
 <template>
   <main class="home">
-    <header class="header">
-      <div class="logo">Lumière</div>
-
-      <nav class="nav">
-        <a>진단하기</a>
-        <a>제품 분석</a>
-        <a>추천 제품</a>
-        <a>커뮤니티</a>
-        <a>마이페이지</a>
-      </nav>
-
-      <div class="header-right">
-        <input placeholder="제품명, 브랜드, 색상 검색" />
-        <button class="login-btn">로그인</button>
-      </div>
-    </header>
-
     <section class="hero">
       <div class="hero-text">
         <h1>
@@ -30,12 +13,12 @@
         </p>
 
         <div class="hero-buttons">
-          <button class="primary-btn">
+          <button class="primary-btn" @click="$router.push('/upload')">
             AI 퍼스널컬러 진단하기
             <small>내 퍼스널컬러 찾기 →</small>
           </button>
 
-          <button class="outline-btn">
+          <button class="outline-btn" @click="$router.push('/product-analysis')">
             제품 색상 분석하기
             <small>제품 색상/호수 분석 →</small>
           </button>
@@ -74,14 +57,14 @@
           <div class="icon">☺</div>
           <h3>AI 퍼스널컬러 진단</h3>
           <p>AI가 분석한 당신의 피부톤과 이미지로 퍼스널컬러를 찾아드려요.</p>
-          <a>바로 진단하기 →</a>
+          <RouterLink to="/upload" class="nav-item">바로 진단하기 →</RouterLink>
         </div>
 
         <div class="feature-card">
           <div class="icon">💄</div>
           <h3>맞춤 화장품 추천</h3>
           <p>당신의 퍼스널컬러에 맞는 화장품을 카테고리별로 추천해드려요.</p>
-          <a>추천 제품 보기 →</a>
+          <RouterLink to="/products" class="nav-item">추천 제품 보기 →</RouterLink>
         </div>
 
         <div class="feature-card">

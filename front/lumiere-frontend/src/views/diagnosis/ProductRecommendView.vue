@@ -1,7 +1,5 @@
 <template>
   <div class="page">
-    <AppHeader />
-
     <main class="recommend-page">
       <section class="hero">
         <div>
@@ -104,7 +102,6 @@
 </template>
 
 <script setup>
-import AppHeader from '@/components/AppHeader.vue';
 
 const products = [
   {
