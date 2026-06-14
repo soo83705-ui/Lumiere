@@ -2,19 +2,19 @@
   <header class="app-header">
     <div class="logo">Lumière</div>
 
-    <nav class="nav">
-      <a>진단하기</a>
-      <a>제품 분석</a>
-      <a>추천 제품</a>
-      <a>커뮤니티</a>
-      <a>마이페이지</a>
+    <nav class="nav-menu">
+      <RouterLink to="/upload" class="nav-item">진단하기</RouterLink>
+      <RouterLink to="/product-analysis" class="nav-item">제품 분석</RouterLink>
+      <RouterLink to="/products" class="nav-item">추천 제품</RouterLink>
+      <RouterLink to="/community" class="nav-item">커뮤니티</RouterLink>
+      <RouterLink to="/mypage" class="nav-item">마이페이지</RouterLink>
     </nav>
 
     <div class="user-area">
       <span>🔔</span>
       <span>♡</span>
       <div class="profile"></div>
-      <span>안녕하세요, Subina님⌄</span>
+      <span>안녕하세요, @@@님⌄</span>
     </div>
   </header>
 </template>

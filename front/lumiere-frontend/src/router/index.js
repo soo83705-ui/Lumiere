@@ -1,17 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import HomeView from '../views/home/HomeView.vue'
+import HomeView from '@/views/Home/HomeView.vue'
 import UploadView from '@/views/diagnosis/UploadView.vue'
 import LoadingView from '@/views/diagnosis/LoadingView.vue'
 import PersonalColorResultView from '@/views/diagnosis/PersonalColorResultView.vue'
 
 import ProductDetailView from '@/views/products/ProductDetailView.vue'
 import ProductRecommendView from '@/views/diagnosis/ProductRecommendView.vue'
-import AnalysisView from '@/views/analysis/AnalysisView.vue'
+import AnalysisView from '@/views/Analysis/AnalysisView.vue'
 import CommunityView from '@/views/community/CommunityView.vue'
 
 import LoginView from '@/views/accounts/LoginView.vue'
 import MyPageView from '@/views/accounts/MyPageView.vue'
+import HomeView from '@/views/Home/HomeView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [

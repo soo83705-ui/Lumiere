@@ -1,8 +1,10 @@
 <template>
   <main class="home">
     <header class="header">
-      <div class="logo">Lumière</div>
-
+      <div class="logo">
+        <RouterLink to="/">Lumière</RouterLink> 
+      </div>
+      
       <nav class="nav">
         <a>진단하기</a>
         <a>제품 분석</a>
@@ -13,7 +15,7 @@
 
       <div class="header-right">
         <input placeholder="제품명, 브랜드, 색상 검색" />
-        <button class="login-btn">로그인</button>
+        <button class="login-btn" @click="$router.push('/login')">로그인</button>
       </div>
     </header>
 
@@ -30,12 +32,12 @@
         </p>
 
         <div class="hero-buttons">
-          <button class="primary-btn">
+          <button class="primary-btn" @click="$router.push('/upload')">
             AI 퍼스널컬러 진단하기
             <small>내 퍼스널컬러 찾기 →</small>
           </button>
 
-          <button class="outline-btn">
+          <button class="outline-btn" @click="$router.push('/product-analysis')">
             제품 색상 분석하기
             <small>제품 색상/호수 분석 →</small>
           </button>
