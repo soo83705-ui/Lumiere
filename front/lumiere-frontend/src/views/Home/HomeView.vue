@@ -1,24 +1,5 @@
 <template>
   <main class="home">
-    <!-- <header class="header">
-      <div class="logo">
-        <RouterLink to="/">Lumière</RouterLink> 
-      </div>
-      
-      <nav class="nav">
-        <a>진단하기</a>
-        <a>제품 분석</a>
-        <a>추천 제품</a>
-        <a>커뮤니티</a>
-        <a>마이페이지</a>
-      </nav>
-
-      <div class="header-right">
-        <input placeholder="제품명, 브랜드, 색상 검색" />
-        <button class="login-btn" @click="$router.push('/login')">로그인</button>
-      </div>
-    </header> -->
-
     <section class="hero">
       <div class="hero-text">
         <h1>
