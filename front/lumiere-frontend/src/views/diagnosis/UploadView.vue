@@ -1,7 +1,5 @@
 <template>
   <div class="page">
-    <AppHeader />
-
     <main class="upload-page">
       <div class="back">‹ 이전으로</div>
 
@@ -129,7 +127,7 @@
 </template>
 
 <script setup>
-import AppHeader from '@/components/AppHeader.vue'
+
 </script>
 
 <style scoped>
