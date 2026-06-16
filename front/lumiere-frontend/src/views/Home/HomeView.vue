@@ -92,9 +92,10 @@
 
       <div class="carousel-container">
         <div class="product-list">
+          
           <div class="flip-card" v-for="product in products" :key="product.name">
             <div class="flip-card-inner">
-          
+              
               <div class="flip-card-front">
                 <div class="product-img"></div>
                 <p class="brand">{{ product.brand }}</p>
@@ -379,6 +380,7 @@ const products = [
   font-weight: 700;
 }
 
+/* --- 제품 추천 섹션 레이아웃 --- */
 /* --- 제품 추천 섹션 레이아웃 --- */
 .products {
   margin: 20px 76px 50px;
