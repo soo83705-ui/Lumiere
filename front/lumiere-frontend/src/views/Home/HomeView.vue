@@ -144,7 +144,7 @@ const products = [
   // 원하신다면 여기에 6번째, 7번째 제품을 계속 추가해 보세요! 스크롤이 생깁니다.
 ]
 </script>
-</script>
+
 
 <style scoped>
 .home {
