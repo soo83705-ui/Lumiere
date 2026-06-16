@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <AppHeader />
+
 
     <main class="loading-page">
       <section class="steps">
