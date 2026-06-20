@@ -1,238 +1,555 @@
 <template>
   <div class="page">
-    <AppHeader />
-
     <main class="detail-page">
-      <div class="back">← URL 분석 결과로 돌아가기</div>
+      <button class="back-btn" type="button" @click="router.back()">
+        ← 추천 제품 목록으로 돌아가기
+      </button>
 
       <section class="title-section">
         <h1>제품 상세 분석 ✨</h1>
         <p>내 피부톤과 제품 색상을 비교하여 상세 분석 결과를 보여드려요.</p>
       </section>
 
-      <section class="top-card">
-        <div class="product-visual">
-          <div class="product-image"></div>
-        </div>
-
-        <div class="product-info">
-          <p class="brand">rom&nd</p>
-          <h2>블러 퍼지 틴트</h2>
-          <h3>23 베어 그레이프</h3>
-          <p class="meta">립틴트 <span></span> 쿨톤 추천</p>
-
-          <div class="hex-box">
-            <span></span>
-            <p>색상 HEX<br /><strong>#B4818E</strong></p>
-          </div>
-        </div>
-
-        <div class="match-score">
-          <p>전체 적합도 ⓘ</p>
-          <strong>96<span>%</span></strong>
-          <h4>매우 잘 어울려요!</h4>
-          <p>여름 쿨 라이트 타입에게 가장 잘 어울리는 색상이에요.</p>
-        </div>
-
-        <div class="radar-box">
-          <div class="legend">
-            <span class="my"></span> 나의 피부톤
-            <span class="product"></span> 제품 색상
-          </div>
-
-          <div class="radar">
-            <div class="radar-shape"></div>
-            <span class="label top">명도 92</span>
-            <span class="label right">채도 95</span>
-            <span class="label bottom-right">쿨톤 97</span>
-            <span class="label bottom-left">탁도 90</span>
-            <span class="label left">대비 94</span>
-          </div>
-        </div>
+      <section v-if="isLoading" class="loading-box">
+        제품 정보를 불러오는 중입니다...
       </section>
 
-      <section class="compare-card">
-        <h2>상세 수치 비교</h2>
-
-        <div class="compare-layout">
-          <div class="compare-table">
-            <div class="table-head">
-              <span>항목</span>
-              <span>나 (여름 쿨 라이트)</span>
-              <span>제품 색상</span>
-              <span>차이</span>
-              <span>분석</span>
-            </div>
-
-            <div class="table-row" v-for="item in compareItems" :key="item.name">
-              <div class="item-name">
-                <span>{{ item.icon }}</span>
-                <strong>{{ item.name }}</strong>
-              </div>
-
-              <div class="bar-cell">
-                <div class="bar">
-                  <div class="fill mine" :style="{ width: item.mine + '%' }"></div>
-                </div>
-                <span>{{ item.mine }}</span>
-              </div>
-
-              <div class="bar-cell">
-                <div class="bar">
-                  <div class="fill product" :style="{ width: item.product + '%' }"></div>
-                </div>
-                <span>{{ item.product }}</span>
-              </div>
-
-              <div class="diff"> {{ item.diff }} </div>
-              <div class="analysis">{{ item.analysis }} <span></span></div>
-            </div>
-
-            <p class="compare-note">ⓘ 차이 값이 ±5 이내일 때 가장 자연스럽게 어울립니다.</p>
+      <template v-else-if="product">
+        <section class="top-card">
+          <div class="product-visual">
+            <div class="product-image" :class="product.imageClass"></div>
           </div>
 
-          <aside class="reason-box">
-            <h3>추천 이유</h3>
+          <div class="product-info">
+            <p class="brand">{{ product.brand }}</p>
+            <h2>{{ product.name }}</h2>
+            <h3>{{ product.option }}</h3>
+            <p class="meta">
+              {{ product.categoryLabel }}
+              <span></span>
+              여름 쿨 라이트 추천
+            </p>
 
-            <div class="reason-item">
-              <span>✓</span>
-              <p>명도, 채도, 쿨톤 수치가<br />당신의 피부톤과 매우 유사해요.</p>
+            <div class="hex-box">
+              <span :style="{ backgroundColor: product.hex }"></span>
+              <p>
+                색상 HEX<br />
+                <strong>{{ product.hex }}</strong>
+              </p>
+            </div>
+          </div>
+
+          <div class="match-score">
+            <p>전체 적합도 ⓘ</p>
+            <strong>{{ product.score }}<span>%</span></strong>
+            <h4>{{ matchMessage }}</h4>
+            <p>{{ product.desc }}</p>
+          </div>
+
+          <div class="radar-box">
+            <div class="legend">
+              <span class="my"></span> 나의 피부톤
+              <span class="product-line"></span> 제품 색상
             </div>
 
-            <div class="reason-item">
-              <span>✓</span>
-              <p>여름 쿨 라이트의 맑고 부드러운<br />분위기를 잘 살려주는 색상이에요.</p>
+            <div class="radar">
+              <div class="radar-shape"></div>
+              <span class="label top">명도 {{ radarScores.brightness }}</span>
+              <span class="label right">채도 {{ radarScores.chroma }}</span>
+              <span class="label bottom-right">쿨톤 {{ radarScores.cool }}</span>
+              <span class="label bottom-left">탁도 {{ radarScores.clear }}</span>
+              <span class="label left">대비 {{ radarScores.contrast }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="compare-card">
+          <h2>상세 수치 비교</h2>
+
+          <div class="compare-layout">
+            <div class="compare-table">
+              <div class="table-head">
+                <span>항목</span>
+                <span>나</span>
+                <span>제품 색상</span>
+                <span>차이</span>
+                <span>분석</span>
+              </div>
+
+              <div class="table-row" v-for="item in compareItems" :key="item.name">
+                <div class="item-name">
+                  <span>{{ item.icon }}</span>
+                  <strong>{{ item.name }}</strong>
+                </div>
+
+                <div class="bar-cell">
+                  <div class="bar">
+                    <div class="fill mine" :style="{ width: item.mine + '%' }"></div>
+                  </div>
+                  <span>{{ item.mine }}</span>
+                </div>
+
+                <div class="bar-cell">
+                  <div class="bar">
+                    <div class="fill product-fill" :style="{ width: item.product + '%' }"></div>
+                  </div>
+                  <span>{{ item.product }}</span>
+                </div>
+
+                <div class="diff">{{ item.diff }}</div>
+                <div class="analysis">{{ item.analysis }} <span></span></div>
+              </div>
+
+              <p class="compare-note">
+                ⓘ 차이 값이 작을수록 내 피부톤과 제품 색상이 자연스럽게 어울립니다.
+              </p>
             </div>
 
-            <div class="reason-item">
-              <span>✓</span>
-              <p>자연스럽고 화사한 혈색을 연출해<br />데일리 립으로 추천드려요.</p>
+            <aside class="reason-box">
+              <h3>추천 이유</h3>
+
+              <div class="reason-item" v-for="reason in recommendReasons" :key="reason">
+                <span>✓</span>
+                <p>{{ reason }}</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="similar-section">
+          <div class="section-head">
+            <h2>유사 제품 추천</h2>
+            <p>{{ product.option }} 옵션과 비슷한 분위기의 제품들이에요.</p>
+          </div>
+
+          <div class="similar-grid">
+            <article
+              class="similar-card"
+              v-for="item in similarProducts"
+              :key="item.id"
+              @click="goDetail(item.id)"
+            >
+              <div class="similar-img" :class="item.imageClass"></div>
+
+              <div>
+                <p class="brand">{{ item.brand }}</p>
+                <h3>{{ item.name }}</h3>
+                <p>{{ item.option }}</p>
+
+                <div class="dots">
+                  <span
+                    v-for="color in item.colors"
+                    :key="color"
+                    :style="{ backgroundColor: color }"
+                  ></span>
+                </div>
+
+                <strong>적합도 {{ item.score }}%</strong>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="bottom-grid">
+          <div class="purchase-box">
+            <h2>구매하기</h2>
+            <p>아래 링크를 통해 제품을 구매할 수 있어요.</p>
+
+            <button class="olive" type="button">
+              OLIVE YOUNG <span>올리브영 바로가기 ↗</span>
+            </button>
+
+            <button class="brand-link" type="button">
+              {{ product.brand }} <span>브랜드 공식몰 바로가기 ↗</span>
+            </button>
+          </div>
+
+          <div class="review-box">
+            <h2>커뮤니티 후기</h2>
+            <p>실제 사용자들의 후기를 확인해보세요.</p>
+
+            <div class="review" v-for="review in reviews" :key="review.name">
+              <div class="avatar"></div>
+
+              <div>
+                <strong>{{ review.name }}</strong>
+                <span>★★★★★</span>
+                <p>{{ review.text }}</p>
+              </div>
+
+              <small>{{ review.date }}</small>
+            </div>
+
+            <button class="more-review" type="button">
+              후기 더 보기 ›
+            </button>
+          </div>
+
+          <aside class="action-box">
+            <button
+              class="main-btn"
+              type="button"
+              :class="{ liked: isLiked }"
+              @click="toggleLike"
+            >
+              {{ isLiked ? '♥ 찜 완료' : '♡ 찜하기' }}
+            </button>
+
+            <button class="outline-btn" type="button" @click="router.push('/mypage')">
+              ▱ 마이페이지에서 보기
+            </button>
+
+            <button class="outline-btn" type="button" @click="router.push('/product-analysis')">
+              ✨ 다른 제품 분석하기 →
+            </button>
+
+            <div class="tip-box">
+              <h3>💡 Lumière TIP</h3>
+              <p>
+                유사도가 높을수록 자연스럽고<br />
+                조화로운 메이크업 연출이 가능해요!
+              </p>
+              <div class="palette-icon"></div>
             </div>
           </aside>
-        </div>
+        </section>
+
+        <p class="notice">
+          🛡️ 분석 결과는 참고용이며, 개인의 피부 톤과 조명 환경에 따라 다를 수 있습니다.
+        </p>
+      </template>
+
+      <section v-else class="loading-box">
+        제품 정보를 찾을 수 없어요.
       </section>
-
-      <section class="similar-section">
-        <div class="section-head">
-          <h2>유사 제품 추천</h2>
-          <p>23 베어 그레이프와 유사한 색상의 제품들이에요.</p>
-        </div>
-
-        <div class="similar-grid">
-          <article class="similar-card" v-for="item in similarProducts" :key="item.name">
-            <div class="similar-img" :class="item.imageClass"></div>
-
-            <div>
-              <p class="brand">{{ item.brand }}</p>
-              <h3>{{ item.name }}</h3>
-              <p>{{ item.option }}</p>
-              <div class="dots">
-                <span v-for="color in item.colors" :key="color" :style="{ backgroundColor: color }"></span>
-              </div>
-              <strong>유사도 {{ item.score }}%</strong>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="bottom-grid">
-        <div class="purchase-box">
-          <h2>구매하기</h2>
-          <p>아래 링크를 통해 제품을 구매할 수 있어요.</p>
-
-          <button class="olive">OLIVE YOUNG <span>올리브영 바로가기 ↗</span></button>
-          <button class="brand-link">rom&nd <span>브랜드 공식몰 바로가기 ↗</span></button>
-        </div>
-
-        <div class="review-box">
-          <h2>커뮤니티 후기</h2>
-          <p>실제 사용자들의 후기를 확인해보세요.</p>
-
-          <div class="review" v-for="review in reviews" :key="review.name">
-            <div class="avatar"></div>
-            <div>
-              <strong>{{ review.name }}</strong>
-              <span>★★★★★</span>
-              <p>{{ review.text }}</p>
-            </div>
-            <small>{{ review.date }}</small>
-          </div>
-
-          <button class="more-review">후기 더 보기 ›</button>
-        </div>
-
-        <aside class="action-box">
-          <button class="main-btn">♡ 찜하기</button>
-          <button class="outline-btn">▱ 마이페이지에서 보기</button>
-          <button class="outline-btn">✨ 다른 제품 분석하기 →</button>
-
-          <div class="tip-box">
-            <h3>💡 Lumière TIP</h3>
-            <p>
-              유사도가 높을수록 자연스럽고<br />
-              조화로운 메이크업 연출이 가능해요!
-            </p>
-            <div class="palette-icon"></div>
-          </div>
-        </aside>
-      </section>
-
-      <p class="notice">🛡️ 분석 결과는 참고용이며, 개인의 피부 톤과 환경에 따라 다를 수 있습니다.</p>
     </main>
   </div>
 </template>
 
 <script setup>
-import AppHeader from '@/components/AppHeader.vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 
-const compareItems = [
-  { icon: '☀️', name: '명도 (밝기)', mine: 65, product: 68, diff: '+3', analysis: '제품이 조금 더 밝아요.' },
-  { icon: '💧', name: '채도 (선명도)', mine: 30, product: 32, diff: '+2', analysis: '아주 약간 더 선명해요.' },
-  { icon: '❄️', name: '쿨톤 (온도감)', mine: 85, product: 87, diff: '+2', analysis: '쿨톤감이 잘 맞아요.' },
-  { icon: '☁️', name: '탁도 (탁한 정도)', mine: 18, product: 16, diff: '-2', analysis: '제품이 조금 더 맑아요.' },
-  { icon: '◐', name: '대비 (명암 대비)', mine: 35, product: 37, diff: '+2', analysis: '대비감이 잘 맞아요.' },
+const route = useRoute()
+const router = useRouter()
+
+const isLoading = ref(true)
+const product = ref(null)
+const allProducts = ref([])
+const isLiked = ref(false)
+
+const categoryTabs = [
+  { key: 'lip', label: '립', keywords: ['립', '립틴트', '틴트', '립스틱', 'lip'] },
+  { key: 'eye', label: '아이', keywords: ['아이', '섀도우', '아이섀도우', '마스카라', '아이라이너', 'eye'] },
+  { key: 'cheek', label: '치크', keywords: ['치크', '블러셔', '블러쉬', 'cheek', 'blush'] },
+  { key: 'base', label: '베이스', keywords: ['베이스', '쿠션', '파운데이션', '컨실러', 'base', 'foundation', 'cushion'] },
+  { key: 'lens', label: '렌즈', keywords: ['렌즈', '컬러렌즈', 'lens'] },
 ]
 
-const similarProducts = [
+const mockProducts = [
   {
+    id: 101,
     brand: 'rom&nd',
-    name: '쥬시 래스팅 틴트',
-    option: '25 베어 그레이프',
-    score: 93,
-    imageClass: 'lip2',
-    colors: ['#c86175', '#e29aac', '#e9bec5', '#cdb2c8', '#c3bec6', '#c7c2c2'],
+    name: '블러 퍼지 틴트',
+    option_name: '23 베어 그레이프',
+    category: '립틴트',
+    match_score: 96,
+    texture: '매트 MLBB 저채도 쿨톤',
+    hex_code: '#B4818E',
+    popularity_score: 96,
+    match_reason: '맑고 부드러운 쿨 핑크 컬러로 여름 쿨 라이트의 분위기를 잘 살려줘요.',
   },
   {
+    id: 102,
     brand: 'peripera',
     name: '잉크 무드 글로이 틴트',
-    option: '07 쿨베리',
-    score: 91,
-    imageClass: 'lip4',
-    colors: ['#c45d73', '#dc8798', '#e6aeb9', '#cab5c6', '#c6bebd'],
+    option_name: '07 쿨베리',
+    category: '립틴트',
+    match_score: 88,
+    texture: '글로시 누디 쿨톤',
+    hex_code: '#C45D73',
+    popularity_score: 89,
+    match_reason: '쿨톤에게 어울리는 맑은 베리 핑크로 생기 있는 입술을 연출해줘요.',
   },
   {
+    id: 201,
     brand: 'dasique',
-    name: '크림 드 로즈 틴트',
-    option: '12 모브 베리',
-    score: 89,
-    imageClass: 'lip5',
-    colors: ['#c35d72', '#d9909d', '#e8b8c0', '#c8b4c4', '#c7c2c5'],
+    name: '섀도우 팔레트',
+    option_name: '쿨 블렌딩',
+    category: '아이섀도우',
+    match_score: 91,
+    texture: '매트 저채도 쿨톤',
+    hex_code: '#C5A3B8',
+    popularity_score: 92,
+    match_reason: '은은한 라벤더 모브 계열로 눈가를 차분하고 맑게 보여줘요.',
   },
   {
-    brand: '3CE',
-    name: '벨벳 립 틴트',
-    option: 'DAFFODIL',
-    score: 87,
-    imageClass: 'lip3',
-    colors: ['#bd6074', '#d78090', '#e5abb4', '#c7b2c3', '#c8c2c5'],
+    id: 301,
+    brand: 'rom&nd',
+    name: '베러 댄 치크',
+    option_name: '블루베리칩',
+    category: '치크',
+    match_score: 90,
+    texture: '저채도 쿨톤',
+    hex_code: '#F0A9B7',
+    popularity_score: 90,
+    match_reason: '과하지 않은 쿨 핑크 치크로 자연스러운 혈색을 만들어줘요.',
+  },
+  {
+    id: 401,
+    brand: 'espoir',
+    name: '비 글로우 쿠션',
+    option_name: 'A00 포슬린',
+    category: '베이스',
+    match_score: 93,
+    texture: '글로시 고명도 쿨톤',
+    hex_code: '#F1D4C6',
+    popularity_score: 94,
+    match_reason: '밝고 맑은 피부 표현에 잘 맞는 베이스 옵션이에요.',
+  },
+  {
+    id: 501,
+    brand: 'OLENS',
+    name: '비비링',
+    option_name: '애쉬 그레이',
+    category: '렌즈',
+    match_score: 89,
+    texture: '저채도 쿨톤',
+    hex_code: '#9A9AB0',
+    popularity_score: 88,
+    match_reason: '차분한 애쉬 그레이 컬러로 쿨톤 이미지와 자연스럽게 어울려요.',
   },
 ]
 
+const normalizeText = (value) => {
+  return String(value || '').toLowerCase().replace(/\s/g, '')
+}
+
+const findCategoryKey = (item) => {
+  const text = normalizeText(`
+    ${item.category || ''}
+    ${item.category_name || ''}
+    ${item.product_category || ''}
+    ${item.name || ''}
+    ${item.product_name || ''}
+    ${item.option_name || ''}
+  `)
+
+  const matchedCategory = categoryTabs.find((category) => {
+    return category.keywords.some((keyword) => text.includes(normalizeText(keyword)))
+  })
+
+  return matchedCategory?.key || 'lip'
+}
+
+const getCategoryLabel = (categoryKey) => {
+  return categoryTabs.find((category) => category.key === categoryKey)?.label || '립'
+}
+
+const getDefaultColors = (categoryKey) => {
+  const colorMap = {
+    lip: ['#c45b75', '#de91a2', '#e8b4c0', '#c9b0c9'],
+    eye: ['#c5a3b8', '#d8bfd8', '#b8a2c8', '#e8d7e8'],
+    cheek: ['#f0a9b7', '#f4c2c9', '#e7a2b0', '#d9b7c8'],
+    base: ['#f1d4c6', '#f5dfd2', '#ead0c3', '#f7e7dc'],
+    lens: ['#8f8fa8', '#a8a6bd', '#c1bfcc', '#d8d6df'],
+  }
+
+  return colorMap[categoryKey] || colorMap.lip
+}
+
+const normalizeProduct = (item, index) => {
+  const categoryKey = findCategoryKey(item)
+  const colors = [
+    item.hex_code,
+    item.hex,
+    item.rep_hex_code,
+    item.color_hex,
+  ].filter(Boolean)
+
+  const defaultColors = getDefaultColors(categoryKey)
+
+  return {
+    id: item.id || item.product_option_id || item.option_id || index + 1,
+    brand: item.brand || item.product_brand || 'Lumière',
+    name: item.name || item.product_name || '추천 상품',
+    option: item.option_name || item.option || item.color_name || item.category || '추천 옵션',
+    categoryKey,
+    categoryLabel: getCategoryLabel(categoryKey),
+    score: Math.round(Number(item.match_score ?? item.similarity_score ?? item.score ?? 90)),
+    popularityScore: Number(item.popularity_score || 0),
+    hex: colors[0] || defaultColors[0],
+    colors: colors.length ? colors : defaultColors,
+    imageClass: `${categoryKey}${(index % 5) + 1}`,
+    texture: item.texture || item.finish || '',
+    desc: item.match_reason || item.desc || `${getCategoryLabel(categoryKey)} 카테고리의 추천 옵션입니다.`,
+  }
+}
+
+const loadProducts = async () => {
+  isLoading.value = true
+
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/api/products/')
+
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data.results || response.data.products || []
+
+    allProducts.value = data.length
+      ? data.map((item, index) => normalizeProduct(item, index))
+      : mockProducts.map((item, index) => normalizeProduct(item, index))
+  } catch (error) {
+    console.error('상세 상품 데이터 불러오기 실패:', error)
+
+    allProducts.value = mockProducts.map((item, index) => normalizeProduct(item, index))
+  }
+
+  setCurrentProduct()
+  isLoading.value = false
+}
+
+const setCurrentProduct = () => {
+  const currentId = String(route.params.id || '')
+
+  product.value =
+    allProducts.value.find((item) => String(item.id) === currentId) ||
+    allProducts.value[0] ||
+    null
+
+  isLiked.value = false
+}
+
+const matchMessage = computed(() => {
+  if (!product.value) return ''
+
+  if (product.value.score >= 95) return '매우 잘 어울려요!'
+  if (product.value.score >= 90) return '잘 어울려요!'
+  if (product.value.score >= 80) return '무난하게 어울려요!'
+  return '참고용으로 추천드려요!'
+})
+
+const radarScores = computed(() => {
+  const score = product.value?.score || 90
+
+  return {
+    brightness: Math.min(99, score - 2),
+    chroma: Math.min(99, score - 1),
+    cool: Math.min(99, score + 1),
+    clear: Math.min(99, score - 4),
+    contrast: Math.min(99, score - 3),
+  }
+})
+
+const compareItems = computed(() => {
+  const score = product.value?.score || 90
+
+  return [
+    {
+      icon: '☀️',
+      name: '명도',
+      mine: 65,
+      product: Math.min(100, 60 + Math.round(score / 10)),
+      diff: '+3',
+      analysis: '밝기 차이가 작아 자연스러워요.',
+    },
+    {
+      icon: '💧',
+      name: '채도',
+      mine: 30,
+      product: Math.min(100, 25 + Math.round(score / 12)),
+      diff: '+2',
+      analysis: '채도가 과하지 않아 잘 맞아요.',
+    },
+    {
+      icon: '❄️',
+      name: '쿨톤',
+      mine: 85,
+      product: Math.min(100, 78 + Math.round(score / 8)),
+      diff: '+2',
+      analysis: '쿨톤감이 잘 맞아요.',
+    },
+    {
+      icon: '☁️',
+      name: '탁도',
+      mine: 18,
+      product: 16,
+      diff: '-2',
+      analysis: '맑은 느낌이 잘 살아나요.',
+    },
+    {
+      icon: '◐',
+      name: '대비',
+      mine: 35,
+      product: 37,
+      diff: '+2',
+      analysis: '대비감이 부담스럽지 않아요.',
+    },
+  ]
+})
+
+const recommendReasons = computed(() => {
+  if (!product.value) return []
+
+  return [
+    `${product.value.categoryLabel} 카테고리에서 여름 쿨 라이트 톤과 적합도가 높은 옵션이에요.`,
+    '명도, 채도, 쿨톤 수치가 피부톤과 자연스럽게 어울려요.',
+    product.value.desc,
+  ]
+})
+
+const similarProducts = computed(() => {
+  if (!product.value) return []
+
+  return allProducts.value
+    .filter((item) => item.id !== product.value.id)
+    .filter((item) => item.categoryKey === product.value.categoryKey)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+})
+
 const reviews = [
-  { name: '봄날의핑크', text: '여쿨라에게 찰떡인 MLBB 컬러예요! 자연스럽고 데일리로 최고 💕', date: '2024.05.18' },
-  { name: '라이트여쿨', text: '23호 진짜 인생템이에요ㅠㅠ 베어한 느낌이 너무 예뻐요!', date: '2024.05.16' },
-  { name: 'subina_beauty', text: '차분한 포도빛이라 쿨톤 피부에 착붙입니다! 발색도 예쁘고 지속력도 좋아요.', date: '2024.05.14' },
+  {
+    name: '라이트여쿨',
+    text: '여쿨라에게 찰떡인 컬러예요! 자연스럽고 데일리로 좋아요.',
+    date: '2026.06.18',
+  },
+  {
+    name: '쿨톤수집가',
+    text: '색이 과하지 않아서 얼굴이 맑아 보여요.',
+    date: '2026.06.16',
+  },
+  {
+    name: 'sujin_beauty',
+    text: '추천 적합도가 높게 나온 이유가 납득되는 색감이에요.',
+    date: '2026.06.14',
+  },
 ]
+
+const goDetail = (id) => {
+  router.push({
+    name: 'product-detail',
+    params: { id },
+  })
+}
+
+const toggleLike = () => {
+  isLiked.value = !isLiked.value
+}
+
+watch(
+  () => route.params.id,
+  () => {
+    if (allProducts.value.length > 0) {
+      setCurrentProduct()
+    }
+  }
+)
+
+onMounted(() => {
+  loadProducts()
+})
 </script>
 
 <style scoped>
@@ -253,9 +570,14 @@ const reviews = [
     linear-gradient(180deg, #fffaf7 0%, #fbf4f1 100%);
 }
 
-.back {
+.back-btn {
+  border: none;
+  background: transparent;
+  color: #5f5754;
   font-size: 14px;
-  margin-bottom: 4px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
 }
 
 .title-section {
@@ -270,6 +592,17 @@ const reviews = [
 }
 
 .title-section p {
+  color: #5f5754;
+}
+
+.loading-box {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 80px;
+  text-align: center;
+  border: 1px solid #eaded8;
+  border-radius: 16px;
+  background: white;
   color: #5f5754;
 }
 
@@ -298,11 +631,63 @@ const reviews = [
 .product-image {
   height: 260px;
   border-radius: 14px;
+}
+
+.lip1,
+.lip2,
+.lip3,
+.lip4,
+.lip5 {
   background:
     radial-gradient(ellipse at 35% 58%, rgba(180, 80, 100, 0.42) 0 30%, transparent 31%),
     linear-gradient(90deg, transparent 42%, #a75a70 43% 56%, transparent 57%),
     linear-gradient(135deg, transparent 0 58%, rgba(190, 74, 94, 0.5) 59% 68%, transparent 69%),
     linear-gradient(135deg, #fff3ef, #f4d8d1);
+}
+
+.eye1,
+.eye2,
+.eye3,
+.eye4,
+.eye5 {
+  background:
+    radial-gradient(circle at 30% 45%, #c5a3b8 0 16%, transparent 17%),
+    radial-gradient(circle at 55% 45%, #d8bfd8 0 16%, transparent 17%),
+    radial-gradient(circle at 40% 70%, #b8a2c8 0 16%, transparent 17%),
+    linear-gradient(135deg, #fff1eb, #f3e5f2);
+}
+
+.cheek1,
+.cheek2,
+.cheek3,
+.cheek4,
+.cheek5 {
+  background:
+    radial-gradient(circle at 50% 55%, rgba(240, 145, 165, 0.6) 0 30%, transparent 31%),
+    radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.5) 0 12%, transparent 13%),
+    linear-gradient(135deg, #fff1eb, #f8dce2);
+}
+
+.base1,
+.base2,
+.base3,
+.base4,
+.base5 {
+  background:
+    radial-gradient(circle at 50% 48%, #f2d2c4 0 26%, transparent 27%),
+    linear-gradient(90deg, transparent 35%, #e8c3b0 36% 63%, transparent 64%),
+    linear-gradient(135deg, #fff7f1, #f3ded3);
+}
+
+.lens1,
+.lens2,
+.lens3,
+.lens4,
+.lens5 {
+  background:
+    radial-gradient(circle at 38% 50%, #9a9ab0 0 24%, #f6f3f6 25% 34%, transparent 35%),
+    radial-gradient(circle at 62% 50%, #aaa7bd 0 24%, #f6f3f6 25% 34%, transparent 35%),
+    linear-gradient(135deg, #fff1eb, #ebeaf2);
 }
 
 .brand {
@@ -348,7 +733,6 @@ const reviews = [
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #b4818e;
 }
 
 .hex-box p {
@@ -404,7 +788,7 @@ const reviews = [
   background: #c65367;
 }
 
-.legend .product {
+.legend .product-line {
   background: repeating-linear-gradient(90deg, #777 0 6px, transparent 6px 10px);
 }
 
@@ -435,11 +819,31 @@ const reviews = [
   color: #5f5754;
 }
 
-.top { top: 0; left: 50%; transform: translateX(-50%); }
-.right { right: 0; top: 43%; }
-.bottom-right { right: 30px; bottom: 8px; }
-.bottom-left { left: 30px; bottom: 8px; }
-.left { left: 0; top: 43%; }
+.top {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.right {
+  right: 0;
+  top: 43%;
+}
+
+.bottom-right {
+  right: 30px;
+  bottom: 8px;
+}
+
+.bottom-left {
+  left: 30px;
+  bottom: 8px;
+}
+
+.left {
+  left: 0;
+  top: 43%;
+}
 
 .compare-card {
   margin-top: 18px;
@@ -482,10 +886,6 @@ const reviews = [
   border-bottom: 1px solid #eaded8;
 }
 
-.table-row:last-of-type {
-  border-bottom: none;
-}
-
 .item-name {
   display: flex;
   gap: 12px;
@@ -518,7 +918,7 @@ const reviews = [
   background: #c65367;
 }
 
-.fill.product {
+.fill.product-fill {
   background: #c8939e;
 }
 
@@ -561,7 +961,7 @@ const reviews = [
 .reason-item {
   display: flex;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   line-height: 1.7;
 }
 
@@ -604,6 +1004,12 @@ const reviews = [
   display: flex;
   gap: 18px;
   background: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.similar-card:hover {
+  transform: translateY(-3px);
 }
 
 .similar-img {
@@ -611,34 +1017,6 @@ const reviews = [
   height: 100px;
   border-radius: 10px;
   flex-shrink: 0;
-}
-
-.lip2 {
-  background:
-    linear-gradient(90deg, transparent 40%, #f0b6c0 41% 52%, transparent 53%),
-    linear-gradient(90deg, transparent 60%, #edc4cb 61% 72%, transparent 73%),
-    linear-gradient(135deg, #fff1eb, #f7d5d5);
-}
-
-.lip3 {
-  background:
-    radial-gradient(ellipse at 36% 55%, rgba(150, 68, 84, 0.5) 0 30%, transparent 31%),
-    linear-gradient(90deg, transparent 55%, #a85b70 56% 68%, transparent 69%),
-    linear-gradient(135deg, #fff1eb, #f7d5d5);
-}
-
-.lip4 {
-  background:
-    linear-gradient(90deg, transparent 38%, #d45b6c 39% 52%, transparent 53%),
-    linear-gradient(90deg, transparent 58%, #b73e4e 59% 75%, transparent 76%),
-    linear-gradient(135deg, #fff1eb, #f7d5d5);
-}
-
-.lip5 {
-  background:
-    linear-gradient(90deg, transparent 40%, #d78994 41% 55%, transparent 56%),
-    linear-gradient(90deg, transparent 64%, #f0c2c6 65% 78%, transparent 79%),
-    linear-gradient(135deg, #fff1eb, #f7d5d5);
 }
 
 .similar-card h3 {
@@ -696,6 +1074,7 @@ const reviews = [
   margin-bottom: 18px;
   font-size: 18px;
   font-weight: 900;
+  cursor: pointer;
 }
 
 .purchase-box button span {
@@ -756,6 +1135,7 @@ const reviews = [
   border-radius: 9px;
   font-weight: 800;
   font-size: 16px;
+  cursor: pointer;
 }
 
 .more-review,
@@ -775,6 +1155,10 @@ const reviews = [
   background: linear-gradient(135deg, #c65367, #d96f82);
   color: white;
   border: none;
+}
+
+.main-btn.liked {
+  background: #a94155;
 }
 
 .tip-box {
@@ -803,8 +1187,8 @@ const reviews = [
   height: 78px;
   border-radius: 8px;
   background:
-    linear-gradient(90deg, transparent 48%, rgba(255,255,255,0.6) 50%),
-    linear-gradient(0deg, transparent 48%, rgba(255,255,255,0.6) 50%),
+    linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.6) 50%),
+    linear-gradient(0deg, transparent 48%, rgba(255, 255, 255, 0.6) 50%),
     linear-gradient(135deg, #f5b6c6, #d58298);
   background-size: 20px 20px, 20px 20px, 100% 100%;
   transform: rotate(12deg);
