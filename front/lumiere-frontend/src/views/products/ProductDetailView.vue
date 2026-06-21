@@ -76,6 +76,59 @@
           </div>
         </section>
 
+        <section class="color-chart-card">
+          <div class="section-head">
+            <h2>색상 프로필</h2>
+            <p>상품 이미지에서 추출한 대표 색상을 기준으로 분석했어요.</p>
+          </div>
+
+          <div class="color-profile-layout">
+            <div class="color-main-box">
+              <div class="big-swatch" :style="{ backgroundColor: product.hex }"></div>
+
+              <div>
+                <p class="color-label">대표 색상</p>
+                <strong>{{ product.hex }}</strong>
+                <span>RGB {{ product.rgbR }}, {{ product.rgbG }}, {{ product.rgbB }}</span>
+              </div>
+            </div>
+
+            <div class="color-bars">
+              <div
+                class="color-bar-row"
+                v-for="item in colorProfileItems"
+                :key="item.name"
+              >
+                <div class="color-bar-head">
+                  <strong>{{ item.name }}</strong>
+                  <span>{{ item.valueLabel }}</span>
+                </div>
+
+                <div class="color-track">
+                  <div
+                    class="color-fill"
+                    :style="{ width: item.value + '%', backgroundColor: item.color }"
+                  ></div>
+                </div>
+
+                <p>{{ item.description }}</p>
+              </div>
+            </div>
+
+            <aside class="tone-guide-box">
+              <h3>나에게 어울리는 이유</h3>
+              <p>{{ personalColorGuide }}</p>
+
+              <div class="tone-chip-list">
+                <span>{{ product.temperatureLabel }}</span>
+                <span>{{ brightnessLabel }}</span>
+                <span>{{ saturationLabel }}</span>
+                <span>{{ softnessLabel }}</span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
         <section class="compare-card">
           <h2>상세 수치 비교</h2>
 
@@ -561,6 +614,18 @@ const setCurrentProduct = () => {
   const currentId = String(route.params.id || '')
   const storedText = localStorage.getItem('selectedProductOption')
 
+  const fetchedProduct =
+    allProducts.value.find((item) => String(item.id) === currentId) ||
+    allProducts.value[0] ||
+    null
+
+  if (fetchedProduct) {
+    product.value = fetchedProduct
+    isLiked.value = Boolean(fetchedProduct.liked)
+    localStorage.setItem('selectedProductOption', JSON.stringify(fetchedProduct))
+    return
+  }
+
   if (storedText) {
     try {
       const storedProduct = normalizeProduct(JSON.parse(storedText))
@@ -575,11 +640,7 @@ const setCurrentProduct = () => {
     }
   }
 
-  product.value =
-    allProducts.value.find((item) => String(item.id) === currentId) ||
-    allProducts.value[0] ||
-    null
-
+  product.value = null
   isLiked.value = Boolean(product.value?.liked)
 }
 
@@ -610,6 +671,84 @@ const radarScores = computed(() => {
     softness: product.value.softness,
     contrast: product.value.contrast,
   }
+})
+
+const brightnessLabel = computed(() => {
+  if (!product.value) return ''
+  if (product.value.brightness >= 72) return '고명도'
+  if (product.value.brightness <= 42) return '저명도'
+  return '중명도'
+})
+
+const saturationLabel = computed(() => {
+  if (!product.value) return ''
+  if (product.value.saturation >= 60) return '고채도'
+  if (product.value.saturation <= 40) return '저채도'
+  return '중채도'
+})
+
+const softnessLabel = computed(() => {
+  if (!product.value) return ''
+  if (product.value.softness >= 55) return '뮤트한 색감'
+  if (product.value.softness <= 25) return '맑은 색감'
+  return '부드러운 색감'
+})
+
+const colorProfileItems = computed(() => {
+  if (!product.value) return []
+
+  return [
+    {
+      name: '명도',
+      value: product.value.brightness,
+      valueLabel: `${product.value.brightness} / 100`,
+      color: '#d35f72',
+      description: '값이 높을수록 밝고 화사한 색상이에요.',
+    },
+    {
+      name: '채도',
+      value: product.value.saturation,
+      valueLabel: `${product.value.saturation} / 100`,
+      color: '#c65367',
+      description: '값이 높을수록 선명하고 생기 있는 색상이에요.',
+    },
+    {
+      name: '색온도',
+      value: product.value.temperatureAxis,
+      valueLabel: product.value.temperatureLabel,
+      color: product.value.temperatureAxis >= 50 ? '#8e8fd6' : '#dd8a54',
+      description: '왼쪽은 웜 방향, 오른쪽은 쿨 방향에 가까워요.',
+    },
+    {
+      name: '탁도',
+      value: product.value.softness,
+      valueLabel: `${product.value.softness} / 100`,
+      color: '#a98b98',
+      description: '값이 높을수록 회색기와 차분함이 있는 색상이에요.',
+    },
+  ]
+})
+
+const personalColorGuide = computed(() => {
+  if (!product.value) return ''
+
+  const brightnessText = product.value.brightness >= 72
+    ? '밝은 색감'
+    : product.value.brightness <= 42
+      ? '딥한 색감'
+      : '중간 밝기의 색감'
+
+  const chromaText = product.value.saturation <= 40
+    ? '채도가 낮아 부드럽고'
+    : product.value.saturation >= 60
+      ? '채도가 높아 생기 있고'
+      : '채도가 적당해 무난하고'
+
+  const temperatureText = product.value.coolness >= product.value.warmth
+    ? '쿨 방향성이 있어 여름 쿨 라이트 기준과 비교하기 좋아요.'
+    : '웜 방향성이 있어 피부톤과의 온도 차이를 확인해보면 좋아요.'
+
+  return `${brightnessText}이고 ${chromaText}, ${temperatureText}`
 })
 
 const compareItems = computed(() => {
@@ -805,6 +944,7 @@ onMounted(() => {
 }
 
 .top-card,
+.color-chart-card,
 .compare-card,
 .similar-section,
 .purchase-box,
@@ -1041,6 +1181,136 @@ onMounted(() => {
 .left {
   left: 0;
   top: 43%;
+}
+
+.color-chart-card {
+  margin-top: 18px;
+  padding: 34px;
+}
+
+.color-profile-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 300px;
+  gap: 28px;
+  align-items: stretch;
+}
+
+.color-main-box {
+  border: 1px solid #eaded8;
+  border-radius: 12px;
+  padding: 22px;
+  background: #fff8f6;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.big-swatch {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  border: 1px solid rgba(45, 37, 36, 0.1);
+  box-shadow: inset 0 0 0 8px rgba(255, 255, 255, 0.32);
+  flex: 0 0 auto;
+}
+
+.color-label {
+  margin: 0 0 8px;
+  color: #7b706c;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.color-main-box strong {
+  display: block;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.color-main-box span {
+  color: #6b625f;
+  font-size: 13px;
+}
+
+.color-bars {
+  border: 1px solid #eaded8;
+  border-radius: 12px;
+  padding: 20px 22px;
+  background: white;
+}
+
+.color-bar-row + .color-bar-row {
+  margin-top: 18px;
+}
+
+.color-bar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.color-bar-head strong {
+  font-size: 14px;
+}
+
+.color-bar-head span {
+  color: #6b625f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.color-track {
+  height: 9px;
+  border-radius: 999px;
+  background: #efe4e0;
+  overflow: hidden;
+}
+
+.color-fill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.color-bar-row p {
+  margin: 7px 0 0;
+  color: #6b625f;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.tone-guide-box {
+  border: 1px solid #eaded8;
+  border-radius: 12px;
+  padding: 22px;
+  background: #fff8f6;
+}
+
+.tone-guide-box h3 {
+  margin: 0 0 14px;
+}
+
+.tone-guide-box p {
+  margin: 0;
+  color: #5f5754;
+  line-height: 1.7;
+}
+
+.tone-chip-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.tone-chip-list span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid #eaded8;
+  color: #6b4b52;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .compare-card {
