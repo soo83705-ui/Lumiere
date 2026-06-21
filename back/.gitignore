@@ -75,3 +75,16 @@ hs_err_pid*
 
 db.sqlite3
 *.sqlite3
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Environment Variables
+.env
+.env.*
+
+# database
+db.sqlite3
+*.sqlite3

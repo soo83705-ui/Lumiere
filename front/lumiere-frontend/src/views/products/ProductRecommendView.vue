@@ -305,7 +305,7 @@ const categoryTabs = [
     serverKey: 'CHEEK',
     label: '치크',
     icon: '😊',
-    keywords: ['치크', '블러셔', '블러쉬', 'cheek', 'blush'],
+    keywords: ['치크', '블러셔', '블러쉬', '볼터치', 'cheek', 'blush'],
   },
   {
     key: 'base',
@@ -324,13 +324,13 @@ const categoryTabs = [
 ]
 
 const filterOptions = [
-  { key: 'mlbb', label: 'MLBB', keywords: ['mlbb', '엠엘비비'] },
-  { key: 'nude', label: '누디', keywords: ['누디', 'nude', '베이지'] },
-  { key: 'matte', label: '매트', keywords: ['매트', 'matte', '벨벳', '블러'] },
-  { key: 'glossy', label: '글로시', keywords: ['글로시', 'glossy', '글로우', '촉촉', '워터'] },
-  { key: 'cool', label: '쿨톤', keywords: ['쿨톤', '여름쿨', '쿨', 'cool', '라벤더', '모브', '핑크', '로즈'] },
-  { key: 'lowChroma', label: '저채도', keywords: ['저채도', '차분', '뮤트', 'soft', 'mauve'] },
-  { key: 'highBrightness', label: '고명도', keywords: ['고명도', '라이트', '밝음', '맑은', 'light'] },
+  { key: 'mlbb', label: 'MLBB', keywords: ['mlbb', '엠엘비비', '모브', '로즈', '누드'] },
+  { key: 'nude', label: '누디', keywords: ['누디', 'nude', '베이지', 'beige'] },
+  { key: 'matte', label: '매트', keywords: ['매트', 'matte', '벨벳', '블러', 'VELVET', 'MATTE'] },
+  { key: 'glossy', label: '글로시', keywords: ['글로시', 'glossy', '글로우', '촉촉', '워터', 'GLOSSY'] },
+  { key: 'cool', label: '쿨톤', keywords: ['쿨톤', '여름쿨', '겨울쿨', '쿨', 'cool', '라벤더', '모브', '핑크', '로즈', 'SUMMER', 'WINTER'] },
+  { key: 'lowChroma', label: '저채도', keywords: ['저채도', '차분', '뮤트', 'soft', 'mauve', 'MUTE'] },
+  { key: 'highBrightness', label: '고명도', keywords: ['고명도', '라이트', '밝음', '맑은', 'light', 'LIGHT'] },
 ]
 
 const toneFilters = computed(() => {
@@ -383,6 +383,21 @@ const normalizeText = (value) => {
   return String(value || '').toLowerCase().replace(/\s/g, '')
 }
 
+const toNumber = (value, fallback = 0) => {
+  const numberValue = Number(value)
+  return Number.isNaN(numberValue) ? fallback : numberValue
+}
+
+const clampScore = (value) => {
+  const numberValue = Number(value)
+
+  if (Number.isNaN(numberValue)) {
+    return 90
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numberValue)))
+}
+
 const findCategoryKey = (item) => {
   const serverCategory = String(item.category || '').toUpperCase()
 
@@ -411,26 +426,78 @@ const findCategoryKey = (item) => {
   return matchedCategory?.key || 'lip'
 }
 
-const makeFallbackTags = (categoryKey, index) => {
-  const tags = ['추천', '쿨톤']
+const getDefaultColors = (categoryKey) => {
+  const colorMap = {
+    lip: ['#c45b75', '#de91a2', '#e8b4c0', '#c9b0c9'],
+    eye: ['#c5a3b8', '#d8bfd8', '#b8a2c8', '#e8d7e8'],
+    cheek: ['#f0a9b7', '#f4c2c9', '#e7a2b0', '#d9b7c8'],
+    base: ['#f1d4c6', '#f5dfd2', '#ead0c3', '#f7e7dc'],
+    lens: ['#8f8fa8', '#a8a6bd', '#c1bfcc', '#d8d6df'],
+  }
 
-  if (index % 2 === 0) {
-    tags.push('저채도')
+  return colorMap[categoryKey] || colorMap.lip
+}
+
+const getFinishLabel = (finish) => {
+  const labels = {
+    MATTE: '매트',
+    GLOSSY: '글로시',
+    VELVET: '벨벳',
+    SHIMMER: '쉬머',
+    NATURAL: '내추럴',
+  }
+
+  return labels[finish] || ''
+}
+
+const getToneLabel = (toneTag) => {
+  const labels = {
+    SPRING_LIGHT: '봄웜 라이트',
+    SPRING_BRIGHT: '봄웜 브라이트',
+    SUMMER_LIGHT: '여름쿨 라이트',
+    SUMMER_MUTE: '여름쿨 뮤트',
+    AUTUMN_MUTE: '가을웜 뮤트',
+    AUTUMN_DEEP: '가을웜 딥',
+    WINTER_BRIGHT: '겨울쿨 브라이트',
+    WINTER_DEEP: '겨울쿨 딥',
+  }
+
+  return labels[toneTag] || ''
+}
+
+const makeMetricTags = (metrics, item) => {
+  const tags = ['추천']
+
+  if (metrics.coolness >= metrics.warmth) {
+    tags.push('쿨톤')
   } else {
+    tags.push('웜톤')
+  }
+
+  if (metrics.brightness >= 70) {
     tags.push('고명도')
   }
 
-  if (categoryKey === 'lip') {
-    tags.push(index % 2 === 0 ? 'MLBB' : '누디')
-    tags.push(index % 3 === 0 ? '매트' : '글로시')
+  if (metrics.saturation <= 40) {
+    tags.push('저채도')
   }
 
-  if (categoryKey === 'eye') {
-    tags.push(index % 2 === 0 ? '매트' : '글로시')
+  if (metrics.saturation >= 60) {
+    tags.push('고채도')
   }
 
-  if (categoryKey === 'base') {
-    tags.push('베이스')
+  const finishLabel = getFinishLabel(item.finish)
+  if (finishLabel) {
+    tags.push(finishLabel)
+  }
+
+  const toneLabel = getToneLabel(item.tone_tag)
+  if (toneLabel) {
+    tags.push(toneLabel)
+  }
+
+  if (item.texture) {
+    tags.push(item.texture)
   }
 
   return tags
@@ -446,53 +513,54 @@ const getFilterKeys = (text) => {
     .map((filter) => filter.key)
 }
 
-const getDefaultColors = (categoryKey) => {
-  const colorMap = {
-    lip: ['#c45b75', '#de91a2', '#e8b4c0', '#c9b0c9'],
-    eye: ['#c5a3b8', '#d8bfd8', '#b8a2c8', '#e8d7e8'],
-    cheek: ['#f0a9b7', '#f4c2c9', '#e7a2b0', '#d9b7c8'],
-    base: ['#f1d4c6', '#f5dfd2', '#ead0c3', '#f7e7dc'],
-    lens: ['#8f8fa8', '#a8a6bd', '#c1bfcc', '#d8d6df'],
-  }
-
-  return colorMap[categoryKey] || colorMap.lip
-}
-
-const clampScore = (value) => {
-  const numberValue = Number(value)
-
-  if (Number.isNaN(numberValue)) {
-    return 90
-  }
-
-  return Math.max(0, Math.min(100, Math.round(numberValue)))
-}
-
 const normalizeProduct = (item, index) => {
   const categoryKey = findCategoryKey(item)
 
   const brand = item.brand || item.product_brand || '브랜드 미상'
   const name = item.name || item.product_name || '추천 상품'
-  const option = item.option_name || item.option || item.color_name || ''
+  const option = item.option_name || item.option || item.color_name || item.texture || ''
   const score = clampScore(item.match_score ?? item.similarity_score ?? item.score ?? 90 - index)
   const popularityScore = Number(item.popularity_score || item.popularityScore || item.review_count || 0)
 
   const imageUrl = item.image_url || item.image || item.thumbnail || item.thumbnail_url || ''
+  const productUrl = item.product_url || item.link || ''
 
-  const fallbackTags = makeFallbackTags(categoryKey, index)
+  const hexCode = item.hex_code || item.hex || item.rep_hex_code || item.color_hex || getDefaultColors(categoryKey)[0]
+
+  const metrics = {
+    rgbR: toNumber(item.rgb_r),
+    rgbG: toNumber(item.rgb_g),
+    rgbB: toNumber(item.rgb_b),
+    brightness: toNumber(item.brightness, 65),
+    saturation: toNumber(item.saturation, 30),
+    coolness: toNumber(item.coolness, 85),
+    warmth: toNumber(item.warmth, 15),
+    depth: toNumber(item.depth, 20),
+    softness: toNumber(item.softness, 18),
+    contrast: toNumber(item.contrast, 35),
+  }
+
+  const metricTags = makeMetricTags(metrics, item)
   const rawTags = Array.isArray(item.tags) ? item.tags : []
 
   const tags = [
     item.category,
     item.texture,
+    item.finish,
+    item.tone_tag,
+    item.color_family,
     ...rawTags,
-    ...fallbackTags,
+    ...metricTags,
   ]
     .filter(Boolean)
     .filter((tag, tagIndex, arr) => arr.indexOf(tag) === tagIndex)
-    .slice(0, 5)
+    .slice(0, 6)
 
-  const desc = item.match_reason || item.reason || item.description || `${selectedCategoryLabel.value} 카테고리의 추천 상품입니다.`
+  const desc =
+    item.match_reason ||
+    item.reason ||
+    item.description ||
+    `${selectedCategoryLabel.value} 카테고리의 추천 상품입니다.`
 
   const filterText = `
     ${brand}
@@ -500,17 +568,13 @@ const normalizeProduct = (item, index) => {
     ${option}
     ${item.category || ''}
     ${item.texture || ''}
+    ${item.finish || ''}
+    ${item.tone_tag || ''}
+    ${item.color_family || ''}
     ${item.description || ''}
     ${desc}
     ${tags.join(' ')}
   `
-
-  const colors = [
-    item.hex_code,
-    item.hex,
-    item.rep_hex_code,
-    item.color_hex,
-  ].filter(Boolean)
 
   return {
     id: item.id || item.product_option_id || item.option_id || index + 1,
@@ -518,14 +582,30 @@ const normalizeProduct = (item, index) => {
     name,
     option,
     categoryKey,
+    categoryLabel: categoryTabs.find((category) => category.key === categoryKey)?.label || '립',
     score,
     popularityScore,
     liked: false,
+
     imageUrl,
-    originalImageUrl: item.image_url || '',
-    productUrl: item.product_url || item.link || '',
+    originalImageUrl: imageUrl,
+    productUrl,
+
+    hexCode,
+    hex_code: hexCode,
+    hex: hexCode,
+    colors: [hexCode, ...getDefaultColors(categoryKey).slice(1)],
+
+    ...metrics,
+
+    toneTag: item.tone_tag || '',
+    toneLabel: getToneLabel(item.tone_tag),
+    texture: item.texture || '',
+    finish: item.finish || '',
+    finishLabel: getFinishLabel(item.finish),
+    colorFamily: item.color_family || '',
+
     imageClass: `${categoryKey}${(index % 5) + 1}`,
-    colors: colors.length ? colors : getDefaultColors(categoryKey),
     desc,
     tags,
     filterKeys: getFilterKeys(filterText),

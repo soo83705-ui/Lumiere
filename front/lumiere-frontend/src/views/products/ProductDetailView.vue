@@ -17,7 +17,20 @@
       <template v-else-if="product">
         <section class="top-card">
           <div class="product-visual">
-            <div class="product-image" :class="product.imageClass"></div>
+            <div class="product-image-box">
+              <img
+                v-if="product.imageUrl"
+                :src="product.imageUrl"
+                :alt="product.name"
+                class="real-product-image"
+              />
+
+              <div
+                v-else
+                class="fallback-product-image product-image"
+                :class="product.imageClass"
+              ></div>
+            </div>
           </div>
 
           <div class="product-info">
@@ -27,7 +40,7 @@
             <p class="meta">
               {{ product.categoryLabel }}
               <span></span>
-              여름 쿨 라이트 추천
+              {{ product.toneLabel || '여름 쿨 라이트' }} 추천
             </p>
 
             <div class="hex-box">
@@ -57,7 +70,7 @@
               <span class="label top">명도 {{ radarScores.brightness }}</span>
               <span class="label right">채도 {{ radarScores.chroma }}</span>
               <span class="label bottom-right">쿨톤 {{ radarScores.cool }}</span>
-              <span class="label bottom-left">탁도 {{ radarScores.clear }}</span>
+              <span class="label bottom-left">탁도 {{ radarScores.softness }}</span>
               <span class="label left">대비 {{ radarScores.contrast }}</span>
             </div>
           </div>
@@ -119,7 +132,7 @@
         <section class="similar-section">
           <div class="section-head">
             <h2>유사 제품 추천</h2>
-            <p>{{ product.option }} 옵션과 비슷한 분위기의 제품들이에요.</p>
+            <p>{{ product.option || product.texture }} 옵션과 비슷한 분위기의 제품들이에요.</p>
           </div>
 
           <div class="similar-grid">
@@ -127,9 +140,22 @@
               class="similar-card"
               v-for="item in similarProducts"
               :key="item.id"
-              @click="goDetail(item.id)"
+              @click="goDetail(item)"
             >
-              <div class="similar-img" :class="item.imageClass"></div>
+              <div class="similar-image-box">
+                <img
+                  v-if="item.imageUrl"
+                  :src="item.imageUrl"
+                  :alt="item.name"
+                  class="similar-real-img"
+                />
+
+                <div
+                  v-else
+                  class="similar-img"
+                  :class="item.imageClass"
+                ></div>
+              </div>
 
               <div>
                 <p class="brand">{{ item.brand }}</p>
@@ -155,12 +181,12 @@
             <h2>구매하기</h2>
             <p>아래 링크를 통해 제품을 구매할 수 있어요.</p>
 
-            <button class="olive" type="button">
-              OLIVE YOUNG <span>올리브영 바로가기 ↗</span>
+            <button class="olive" type="button" @click="openProductUrl">
+              상품 구매 링크 <span>네이버 쇼핑/스토어 바로가기 ↗</span>
             </button>
 
-            <button class="brand-link" type="button">
-              {{ product.brand }} <span>브랜드 공식몰 바로가기 ↗</span>
+            <button class="brand-link" type="button" @click="openProductUrl">
+              {{ product.brand }} <span>상품 페이지 바로가기 ↗</span>
             </button>
           </div>
 
@@ -239,86 +265,44 @@ const product = ref(null)
 const allProducts = ref([])
 const isLiked = ref(false)
 
-const categoryTabs = [
-  { key: 'lip', label: '립', keywords: ['립', '립틴트', '틴트', '립스틱', 'lip'] },
-  { key: 'eye', label: '아이', keywords: ['아이', '섀도우', '아이섀도우', '마스카라', '아이라이너', 'eye'] },
-  { key: 'cheek', label: '치크', keywords: ['치크', '블러셔', '블러쉬', 'cheek', 'blush'] },
-  { key: 'base', label: '베이스', keywords: ['베이스', '쿠션', '파운데이션', '컨실러', 'base', 'foundation', 'cushion'] },
-  { key: 'lens', label: '렌즈', keywords: ['렌즈', '컬러렌즈', 'lens'] },
-]
+const USER_COLOR_METRICS = {
+  brightness: 65,
+  saturation: 30,
+  coolness: 85,
+  softness: 18,
+  contrast: 35,
+}
 
-const mockProducts = [
+const categoryTabs = [
   {
-    id: 101,
-    brand: 'rom&nd',
-    name: '블러 퍼지 틴트',
-    option_name: '23 베어 그레이프',
-    category: '립틴트',
-    match_score: 96,
-    texture: '매트 MLBB 저채도 쿨톤',
-    hex_code: '#B4818E',
-    popularity_score: 96,
-    match_reason: '맑고 부드러운 쿨 핑크 컬러로 여름 쿨 라이트의 분위기를 잘 살려줘요.',
+    key: 'lip',
+    serverKey: 'LIP',
+    label: '립',
+    keywords: ['립', '립틴트', '틴트', '립스틱', 'lip'],
   },
   {
-    id: 102,
-    brand: 'peripera',
-    name: '잉크 무드 글로이 틴트',
-    option_name: '07 쿨베리',
-    category: '립틴트',
-    match_score: 88,
-    texture: '글로시 누디 쿨톤',
-    hex_code: '#C45D73',
-    popularity_score: 89,
-    match_reason: '쿨톤에게 어울리는 맑은 베리 핑크로 생기 있는 입술을 연출해줘요.',
+    key: 'eye',
+    serverKey: 'EYE',
+    label: '아이',
+    keywords: ['아이', '섀도우', '쉐도우', '아이섀도우', '아이팔레트', '마스카라', '아이라이너', 'eye'],
   },
   {
-    id: 201,
-    brand: 'dasique',
-    name: '섀도우 팔레트',
-    option_name: '쿨 블렌딩',
-    category: '아이섀도우',
-    match_score: 91,
-    texture: '매트 저채도 쿨톤',
-    hex_code: '#C5A3B8',
-    popularity_score: 92,
-    match_reason: '은은한 라벤더 모브 계열로 눈가를 차분하고 맑게 보여줘요.',
+    key: 'cheek',
+    serverKey: 'CHEEK',
+    label: '치크',
+    keywords: ['치크', '블러셔', '블러쉬', '볼터치', 'cheek', 'blush'],
   },
   {
-    id: 301,
-    brand: 'rom&nd',
-    name: '베러 댄 치크',
-    option_name: '블루베리칩',
-    category: '치크',
-    match_score: 90,
-    texture: '저채도 쿨톤',
-    hex_code: '#F0A9B7',
-    popularity_score: 90,
-    match_reason: '과하지 않은 쿨 핑크 치크로 자연스러운 혈색을 만들어줘요.',
+    key: 'base',
+    serverKey: 'BASE',
+    label: '베이스',
+    keywords: ['베이스', '쿠션', '파운데이션', '컨실러', 'base', 'foundation', 'cushion'],
   },
   {
-    id: 401,
-    brand: 'espoir',
-    name: '비 글로우 쿠션',
-    option_name: 'A00 포슬린',
-    category: '베이스',
-    match_score: 93,
-    texture: '글로시 고명도 쿨톤',
-    hex_code: '#F1D4C6',
-    popularity_score: 94,
-    match_reason: '밝고 맑은 피부 표현에 잘 맞는 베이스 옵션이에요.',
-  },
-  {
-    id: 501,
-    brand: 'OLENS',
-    name: '비비링',
-    option_name: '애쉬 그레이',
-    category: '렌즈',
-    match_score: 89,
-    texture: '저채도 쿨톤',
-    hex_code: '#9A9AB0',
-    popularity_score: 88,
-    match_reason: '차분한 애쉬 그레이 컬러로 쿨톤 이미지와 자연스럽게 어울려요.',
+    key: 'lens',
+    serverKey: 'LENS',
+    label: '렌즈',
+    keywords: ['렌즈', '컬러렌즈', 'lens'],
   },
 ]
 
@@ -326,7 +310,32 @@ const normalizeText = (value) => {
   return String(value || '').toLowerCase().replace(/\s/g, '')
 }
 
+const toNumber = (value, fallback = 0) => {
+  const numberValue = Number(value)
+  return Number.isNaN(numberValue) ? fallback : numberValue
+}
+
+const clampScore = (value, fallback = 90) => {
+  const numberValue = Number(value)
+
+  if (Number.isNaN(numberValue)) {
+    return fallback
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numberValue)))
+}
+
 const findCategoryKey = (item) => {
+  const serverCategory = String(item.category || '').toUpperCase()
+
+  const matchedByServerKey = categoryTabs.find((category) => {
+    return category.serverKey === serverCategory
+  })
+
+  if (matchedByServerKey) {
+    return matchedByServerKey.key
+  }
+
   const text = normalizeText(`
     ${item.category || ''}
     ${item.category_name || ''}
@@ -334,6 +343,7 @@ const findCategoryKey = (item) => {
     ${item.name || ''}
     ${item.product_name || ''}
     ${item.option_name || ''}
+    ${item.texture || ''}
   `)
 
   const matchedCategory = categoryTabs.find((category) => {
@@ -359,31 +369,151 @@ const getDefaultColors = (categoryKey) => {
   return colorMap[categoryKey] || colorMap.lip
 }
 
-const normalizeProduct = (item, index) => {
-  const categoryKey = findCategoryKey(item)
-  const colors = [
-    item.hex_code,
-    item.hex,
-    item.rep_hex_code,
-    item.color_hex,
-  ].filter(Boolean)
+const getToneLabel = (toneTag) => {
+  const labels = {
+    SPRING_LIGHT: '봄 웜 라이트',
+    SPRING_BRIGHT: '봄 웜 브라이트',
+    SUMMER_LIGHT: '여름 쿨 라이트',
+    SUMMER_MUTE: '여름 쿨 뮤트',
+    AUTUMN_MUTE: '가을 웜 뮤트',
+    AUTUMN_DEEP: '가을 웜 딥',
+    WINTER_BRIGHT: '겨울 쿨 브라이트',
+    WINTER_DEEP: '겨울 쿨 딥',
+  }
 
+  return labels[toneTag] || ''
+}
+
+const getFinishLabel = (finish) => {
+  const labels = {
+    MATTE: '매트',
+    GLOSSY: '글로시',
+    VELVET: '벨벳',
+    SHIMMER: '쉬머',
+    NATURAL: '내추럴',
+    UNKNOWN: '',
+  }
+
+  return labels[finish] || ''
+}
+
+const getMetric = (item, key, fallback) => {
+  return toNumber(item[key], fallback)
+}
+
+const getMetricAnalysis = (metricName, diff, productValue) => {
+  const absDiff = Math.abs(diff)
+
+  if (metricName === '명도') {
+    if (absDiff <= 10) return '밝기 차이가 작아 자연스러워요.'
+    if (diff > 0) return '제품이 내 기준보다 더 밝은 편이에요.'
+    return '제품이 내 기준보다 조금 딥한 편이에요.'
+  }
+
+  if (metricName === '채도') {
+    if (absDiff <= 10) return '채도 차이가 크지 않아 무난해요.'
+    if (productValue > USER_COLOR_METRICS.saturation) return '제품 색상이 더 선명한 편이에요.'
+    return '제품 색상이 더 차분한 편이에요.'
+  }
+
+  if (metricName === '쿨톤') {
+    if (productValue >= 70) return '쿨톤감이 높아서 잘 맞아요.'
+    return '쿨톤감은 약해서 참고용으로 보는 게 좋아요.'
+  }
+
+  if (metricName === '탁도') {
+    if (absDiff <= 15) return '부드러움/탁도 차이가 적당해요.'
+    if (diff > 0) return '제품이 더 부드럽고 뮤트한 편이에요.'
+    return '제품이 더 맑고 선명한 편이에요.'
+  }
+
+  if (metricName === '대비') {
+    if (absDiff <= 15) return '대비감이 부담스럽지 않아요.'
+    if (diff > 0) return '제품 대비감이 더 강한 편이에요.'
+    return '제품 대비감이 더 낮은 편이에요.'
+  }
+
+  return '수치 차이를 기준으로 비교했어요.'
+}
+
+const formatDiff = (diff) => {
+  return diff > 0 ? `+${diff}` : String(diff)
+}
+
+const normalizeProduct = (item, index = 0) => {
+  const categoryKey = findCategoryKey(item)
   const defaultColors = getDefaultColors(categoryKey)
+  const hex = item.hexCode || item.hex_code || item.hex || item.rep_hex_code || item.color_hex || item.colors?.[0] || defaultColors[0]
+
+  const imageUrl =
+    item.imageUrl ||
+    item.image_url ||
+    item.image ||
+    item.thumbnail ||
+    item.thumbnail_url ||
+    item.originalImageUrl ||
+    ''
+
+  const score = clampScore(item.score ?? item.match_score ?? item.similarity_score ?? 90, 90)
+
+  const brightness = getMetric(item, 'brightness', 65)
+  const saturation = getMetric(item, 'saturation', 30)
+  const coolness = getMetric(item, 'coolness', 85)
+  const warmth = getMetric(item, 'warmth', 15)
+  const depth = getMetric(item, 'depth', 20)
+  const softness = getMetric(item, 'softness', 18)
+  const contrast = getMetric(item, 'contrast', 35)
 
   return {
     id: item.id || item.product_option_id || item.option_id || index + 1,
-    brand: item.brand || item.product_brand || 'Lumière',
+    brand: item.brand || item.product_brand || '브랜드 미상',
     name: item.name || item.product_name || '추천 상품',
-    option: item.option_name || item.option || item.color_name || item.category || '추천 옵션',
+    option: item.option || item.option_name || item.color_name || item.texture || '',
     categoryKey,
-    categoryLabel: getCategoryLabel(categoryKey),
-    score: Math.round(Number(item.match_score ?? item.similarity_score ?? item.score ?? 90)),
-    popularityScore: Number(item.popularity_score || 0),
-    hex: colors[0] || defaultColors[0],
-    colors: colors.length ? colors : defaultColors,
-    imageClass: `${categoryKey}${(index % 5) + 1}`,
-    texture: item.texture || item.finish || '',
-    desc: item.match_reason || item.desc || `${getCategoryLabel(categoryKey)} 카테고리의 추천 옵션입니다.`,
+    categoryLabel: item.categoryLabel || getCategoryLabel(categoryKey),
+    score,
+    popularityScore: Number(item.popularityScore || item.popularity_score || item.review_count || 0),
+
+    hex,
+    hexCode: hex,
+    hex_code: hex,
+    colors: Array.isArray(item.colors) && item.colors.length
+      ? item.colors
+      : [hex, ...defaultColors.slice(1)],
+
+    imageUrl,
+    originalImageUrl: imageUrl,
+    productUrl: item.productUrl || item.product_url || item.link || '',
+
+    imageClass: item.imageClass || `${categoryKey}${(index % 5) + 1}`,
+    texture: item.texture || '',
+    finish: item.finish || '',
+    finishLabel: item.finishLabel || getFinishLabel(item.finish),
+    toneTag: item.toneTag || item.tone_tag || '',
+    toneLabel: item.toneLabel || getToneLabel(item.toneTag || item.tone_tag),
+    colorFamily: item.colorFamily || item.color_family || '',
+
+    rgbR: toNumber(item.rgbR ?? item.rgb_r),
+    rgbG: toNumber(item.rgbG ?? item.rgb_g),
+    rgbB: toNumber(item.rgbB ?? item.rgb_b),
+
+    brightness,
+    saturation,
+    coolness,
+    warmth,
+    depth,
+    softness,
+    contrast,
+
+    desc:
+      item.desc ||
+      item.match_reason ||
+      item.reason ||
+      item.description ||
+      `${getCategoryLabel(categoryKey)} 카테고리의 추천 옵션입니다.`,
+
+    liked: Boolean(item.liked),
+    raw: item.raw || item,
   }
 }
 
@@ -397,60 +527,26 @@ const loadProducts = async () => {
       ? response.data
       : response.data.results || response.data.products || []
 
-    allProducts.value = data.length
-      ? data.map((item, index) => normalizeProduct(item, index))
-      : mockProducts.map((item, index) => normalizeProduct(item, index))
+    allProducts.value = data.map((item, index) => normalizeProduct(item, index))
   } catch (error) {
     console.error('상세 상품 데이터 불러오기 실패:', error)
-
-    allProducts.value = mockProducts.map((item, index) => normalizeProduct(item, index))
-  }
-
-  setCurrentProduct()
-  isLoading.value = false
-}
-
-const getStoredCategoryLabel = (categoryKey) => {
-  const labelMap = {
-    lip: '립',
-    eye: '아이',
-    cheek: '치크',
-    base: '베이스',
-    lens: '렌즈',
-  }
-
-  return labelMap[categoryKey] || '립'
-}
-
-const normalizeStoredProduct = (item) => {
-  return {
-    id: item.id,
-    brand: item.brand || 'Lumière',
-    name: item.name || '추천 상품',
-    option: item.option || item.option_name || '추천 옵션',
-    categoryKey: item.categoryKey || 'lip',
-    categoryLabel: item.categoryLabel || getStoredCategoryLabel(item.categoryKey),
-    score: item.score || item.match_score || 90,
-    popularityScore: item.popularityScore || item.popularity_score || 0,
-    hex: item.hex || item.hex_code || item.colors?.[0] || '#C45B75',
-    colors: item.colors || [item.hex || item.hex_code || '#C45B75'],
-    imageClass: item.imageClass || `${item.categoryKey || 'lip'}1`,
-    texture: item.texture || '',
-    desc: item.desc || item.match_reason || '선택한 상품 옵션의 상세 분석 결과입니다.',
+    allProducts.value = []
+  } finally {
+    setCurrentProduct()
+    isLoading.value = false
   }
 }
 
 const setCurrentProduct = () => {
   const currentId = String(route.params.id || '')
-
   const storedText = localStorage.getItem('selectedProductOption')
 
   if (storedText) {
     try {
-      const storedProduct = JSON.parse(storedText)
+      const storedProduct = normalizeProduct(JSON.parse(storedText))
 
-      if (String(storedProduct.id) === currentId) {
-        product.value = normalizeStoredProduct(storedProduct)
+      if (!currentId || String(storedProduct.id) === currentId) {
+        product.value = storedProduct
         isLiked.value = Boolean(storedProduct.liked)
         return
       }
@@ -464,87 +560,107 @@ const setCurrentProduct = () => {
     allProducts.value[0] ||
     null
 
-  isLiked.value = false
+  isLiked.value = Boolean(product.value?.liked)
 }
-
 
 const matchMessage = computed(() => {
   if (!product.value) return ''
 
-  if (product.value.score >= 95) return '매우 잘 어울려요!'
-  if (product.value.score >= 90) return '잘 어울려요!'
-  if (product.value.score >= 80) return '무난하게 어울려요!'
+  if (product.value.score >= 90) return '무난하게 어울려요!'
+  if (product.value.score >= 80) return '추천 후보로 좋아요!'
+  if (product.value.score >= 70) return '부분적으로 어울려요!'
   return '참고용으로 추천드려요!'
 })
 
 const radarScores = computed(() => {
-  const score = product.value?.score || 90
+  if (!product.value) {
+    return {
+      brightness: 0,
+      chroma: 0,
+      cool: 0,
+      softness: 0,
+      contrast: 0,
+    }
+  }
 
   return {
-    brightness: Math.min(99, score - 2),
-    chroma: Math.min(99, score - 1),
-    cool: Math.min(99, score + 1),
-    clear: Math.min(99, score - 4),
-    contrast: Math.min(99, score - 3),
+    brightness: product.value.brightness,
+    chroma: product.value.saturation,
+    cool: product.value.coolness,
+    softness: product.value.softness,
+    contrast: product.value.contrast,
   }
 })
 
 const compareItems = computed(() => {
-  const score = product.value?.score || 90
+  if (!product.value) return []
 
-  return [
+  const rows = [
     {
       icon: '☀️',
       name: '명도',
-      mine: 65,
-      product: Math.min(100, 60 + Math.round(score / 10)),
-      diff: '+3',
-      analysis: '밝기 차이가 작아 자연스러워요.',
+      mine: USER_COLOR_METRICS.brightness,
+      product: product.value.brightness,
     },
     {
       icon: '💧',
       name: '채도',
-      mine: 30,
-      product: Math.min(100, 25 + Math.round(score / 12)),
-      diff: '+2',
-      analysis: '채도가 과하지 않아 잘 맞아요.',
+      mine: USER_COLOR_METRICS.saturation,
+      product: product.value.saturation,
     },
     {
       icon: '❄️',
       name: '쿨톤',
-      mine: 85,
-      product: Math.min(100, 78 + Math.round(score / 8)),
-      diff: '+2',
-      analysis: '쿨톤감이 잘 맞아요.',
+      mine: USER_COLOR_METRICS.coolness,
+      product: product.value.coolness,
     },
     {
       icon: '☁️',
       name: '탁도',
-      mine: 18,
-      product: 16,
-      diff: '-2',
-      analysis: '맑은 느낌이 잘 살아나요.',
+      mine: USER_COLOR_METRICS.softness,
+      product: product.value.softness,
     },
     {
       icon: '◐',
       name: '대비',
-      mine: 35,
-      product: 37,
-      diff: '+2',
-      analysis: '대비감이 부담스럽지 않아요.',
+      mine: USER_COLOR_METRICS.contrast,
+      product: product.value.contrast,
     },
   ]
+
+  return rows.map((row) => {
+    const diff = Math.round(row.product - row.mine)
+
+    return {
+      ...row,
+      diff: formatDiff(diff),
+      analysis: getMetricAnalysis(row.name, diff, row.product),
+    }
+  })
 })
 
 const recommendReasons = computed(() => {
   if (!product.value) return []
 
-  return [
-    `${product.value.categoryLabel} 카테고리에서 여름 쿨 라이트 톤과 적합도가 높은 옵션이에요.`,
-    '명도, 채도, 쿨톤 수치가 피부톤과 자연스럽게 어울려요.',
+  const reasons = [
+    `${product.value.categoryLabel} 카테고리에서 ${product.value.toneLabel || '여름 쿨 라이트'} 기준으로 추천된 옵션이에요.`,
+    `대표 색상은 ${product.value.hex}이고, 명도 ${product.value.brightness}, 채도 ${product.value.saturation}, 쿨톤 ${product.value.coolness}로 분석됐어요.`,
     product.value.desc,
   ]
+
+  return reasons.filter(Boolean)
 })
+
+const getColorDistance = (a, b) => {
+  return (
+    Math.abs(a.brightness - b.brightness) * 0.22 +
+    Math.abs(a.saturation - b.saturation) * 0.18 +
+    Math.abs(a.coolness - b.coolness) * 0.24 +
+    Math.abs(a.warmth - b.warmth) * 0.14 +
+    Math.abs(a.softness - b.softness) * 0.12 +
+    Math.abs(a.contrast - b.contrast) * 0.10
+  )
+}
 
 const similarProducts = computed(() => {
   if (!product.value) return []
@@ -552,7 +668,7 @@ const similarProducts = computed(() => {
   return allProducts.value
     .filter((item) => item.id !== product.value.id)
     .filter((item) => item.categoryKey === product.value.categoryKey)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => getColorDistance(a, product.value) - getColorDistance(b, product.value))
     .slice(0, 4)
 })
 
@@ -574,15 +690,31 @@ const reviews = [
   },
 ]
 
-const goDetail = (id) => {
+const goDetail = (item) => {
+  localStorage.setItem('selectedProductOption', JSON.stringify(item))
+
   router.push({
     name: 'product-detail',
-    params: { id },
+    params: { id: item.id },
   })
 }
 
 const toggleLike = () => {
   isLiked.value = !isLiked.value
+
+  if (product.value) {
+    product.value.liked = isLiked.value
+    localStorage.setItem('selectedProductOption', JSON.stringify(product.value))
+  }
+}
+
+const openProductUrl = () => {
+  if (product.value?.productUrl) {
+    window.open(product.value.productUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+
+  alert('상품 구매 링크가 아직 등록되지 않았어요.')
 }
 
 watch(
@@ -1247,4 +1379,47 @@ onMounted(() => {
   color: #8e7e79;
   margin-top: 26px;
 }
+
+.product-image-box {
+  width: 100%;
+  height: 260px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff1f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.real-product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: white;
+}
+
+.fallback-product-image {
+  width: 100%;
+  height: 100%;
+}
+
+.similar-image-box {
+  width: 80px;
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff1f3;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.similar-real-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: white;
+}
+
 </style>
