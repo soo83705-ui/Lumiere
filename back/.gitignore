@@ -89,3 +89,7 @@ env/
 db.sqlite3
 *.sqlite3back/db.sqlite3
 *.sqlite3
+back/db.sqlite3
+*.sqlite3
+*.backup.sqlite3
+*.local.backup.sqlite3
