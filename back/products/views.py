@@ -50,7 +50,7 @@ def product_queryset(request, apply_filters=True):
         .order_by('option_no', 'option_name', 'id')
     )
     queryset = (
-        Product.objects.filter(canonical_key__isnull=False)
+        Product.objects.all()
         .annotate(
             review_count=Count('reviews', distinct=True),
             average_rating=Avg('reviews__rating'),
@@ -103,7 +103,7 @@ def sort_products_by_best_option(products, user_profile):
     def best_score(product):
         options = list(getattr(product, '_prefetched_objects_cache', {}).get('options', []) or [])
         if not options:
-            return 0
+            return getattr(product, 'match_score', 0) or 0
         return max(
             calculate_option_match(option, user_profile, product.category)['match_score']
             for option in options

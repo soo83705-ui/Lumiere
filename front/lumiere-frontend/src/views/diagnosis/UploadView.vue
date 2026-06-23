@@ -1,8 +1,6 @@
 <template>
   <div class="page">
     <main class="upload-page">
-      <button class="back" type="button" @click="router.back()">이전으로</button>
-
       <section class="title-section">
         <h1>AI 퍼스널 컬러 진단</h1>
         <p>정확한 진단을 위해 자연광에서 정면 사진을 업로드해 주세요.</p>
@@ -58,10 +56,7 @@
                 @change="handleFileChange"
               />
               <button class="primary-btn" type="button" :disabled="submitting" @click="openFilePicker">
-                카메라 / 갤러리에서 선택
-              </button>
-              <button v-if="selectedFile" class="outline-btn" type="button" :disabled="submitting" @click="clearSelectedFile">
-                다른 사진으로 변경
+                {{ selectedFile ? '사진 다시 선택하기' : '카메라 / 갤러리에서 선택' }}
               </button>
 
               <small>JPG, PNG 파일만 업로드 가능해요. 최대 10MB</small>
@@ -87,6 +82,11 @@
             <h3>좋은 사진 조건</h3>
             <div class="condition-grid">
               <div v-for="item in goodPhotoConditions" :key="item.title" class="condition-card good">
+                <div
+                  class="condition-image"
+                  :style="{ backgroundPosition: item.imagePosition }"
+                  aria-hidden="true"
+                ></div>
                 <span aria-hidden="true">{{ item.icon }}</span>
                 <strong>{{ item.title }}</strong>
                 <p>{{ item.description }}</p>
@@ -99,6 +99,11 @@
             <h3>피하면 좋은 조건</h3>
             <div class="condition-grid">
               <div v-for="item in badPhotoConditions" :key="item.title" class="condition-card bad">
+                <div
+                  class="condition-image"
+                  :style="{ backgroundPosition: item.imagePosition }"
+                  aria-hidden="true"
+                ></div>
                 <span aria-hidden="true">{{ item.icon }}</span>
                 <strong>{{ item.title }}</strong>
                 <p>{{ item.description }}</p>
@@ -144,17 +149,57 @@ const guideItems = [
 ]
 
 const goodPhotoConditions = [
-  { icon: '☼', title: '균일한 자연광', description: '창가의 부드러운 빛처럼 얼굴 전체가 고르게 밝은 사진' },
-  { icon: '□', title: '무채색 배경', description: '흰색, 회색, 베이지처럼 피부색에 영향을 덜 주는 배경' },
-  { icon: '◎', title: '정면 얼굴', description: '이마부터 턱선까지 얼굴 윤곽이 또렷하게 보이는 구도' },
-  { icon: '⌁', title: '정리된 머리카락', description: '앞머리와 옆머리가 볼, 이마, 턱을 가리지 않는 상태' },
+  {
+    icon: '☼',
+    title: '균일한 자연광',
+    description: '창가의 부드러운 빛처럼 얼굴 전체가 고르게 밝은 사진',
+    imagePosition: '0% 0%',
+  },
+  {
+    icon: '□',
+    title: '무채색 배경',
+    description: '흰색, 회색, 베이지처럼 피부색에 영향을 덜 주는 배경',
+    imagePosition: '33.333% 0%',
+  },
+  {
+    icon: '◎',
+    title: '정면 얼굴',
+    description: '이마부터 턱선까지 얼굴 윤곽이 또렷하게 보이는 구도',
+    imagePosition: '66.666% 0%',
+  },
+  {
+    icon: '⌁',
+    title: '정리된 머리카락',
+    description: '앞머리와 옆머리가 볼, 이마, 턱을 가리지 않는 상태',
+    imagePosition: '100% 0%',
+  },
 ]
 
 const badPhotoConditions = [
-  { icon: '◐', title: '색이 강한 조명', description: '노란 조명, 푸른 조명, 역광처럼 피부 톤을 바꾸는 빛' },
-  { icon: '▣', title: '원색 배경', description: '빨강, 초록, 파랑 벽지나 커튼처럼 얼굴에 색이 반사되는 배경' },
-  { icon: '✦', title: '메이크업/보정', description: '진한 베이스, 색조 렌즈, 필터, 피부 보정이 들어간 사진' },
-  { icon: '⌁', title: '얼굴을 가린 머리', description: '그림자나 머리카락이 이마, 볼, 턱선을 덮는 사진' },
+  {
+    icon: '◐',
+    title: '색이 강한 조명',
+    description: '노란 조명, 푸른 조명, 역광처럼 피부 톤을 바꾸는 빛',
+    imagePosition: '0% 100%',
+  },
+  {
+    icon: '▣',
+    title: '원색 배경',
+    description: '빨강, 초록, 파랑 벽지나 커튼처럼 얼굴에 색이 반사되는 배경',
+    imagePosition: '33.333% 100%',
+  },
+  {
+    icon: '✦',
+    title: '메이크업/보정',
+    description: '진한 베이스, 색조 렌즈, 필터, 피부 보정이 들어간 사진',
+    imagePosition: '66.666% 100%',
+  },
+  {
+    icon: '⌁',
+    title: '얼굴을 가린 머리',
+    description: '그림자나 머리카락이 이마, 볼, 턱선을 덮는 사진',
+    imagePosition: '100% 100%',
+  },
 ]
 
 const openFilePicker = () => {
@@ -246,15 +291,6 @@ onBeforeUnmount(revokePreview)
 .upload-page {
   padding: 32px 48px 48px;
   background: linear-gradient(180deg, #fffaf7 0%, #fbf4f1 100%);
-}
-
-.back {
-  border: 0;
-  background: transparent;
-  color: #6d625f;
-  cursor: pointer;
-  font: inherit;
-  margin-bottom: 8px;
 }
 
 .title-section {
@@ -516,18 +552,28 @@ h2 {
 
 .condition-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
 .condition-card {
-  min-height: 132px;
+  min-height: 248px;
   border-radius: 10px;
-  padding: 16px 14px;
+  padding: 12px;
   border: 1px solid transparent;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.condition-image {
+  aspect-ratio: 1 / 0.72;
+  width: 100%;
+  border-radius: 8px;
+  background-image: url('/images/diagnosis/photo-condition-guide.png');
+  background-repeat: no-repeat;
+  background-size: 400% 200%;
+  background-color: #f7eee9;
 }
 
 .condition-card span {
