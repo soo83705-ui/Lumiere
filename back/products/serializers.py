@@ -168,18 +168,51 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_best_option(self, obj):
         options = prefetched_options(obj)
         if not options:
-            return None
+            return {
+                'id': obj.id,
+                'option_no': '',
+                'option_name': obj.texture or obj.name,
+                'option_key': obj.naver_product_id or obj.product_url or str(obj.id),
+                'image_url': obj.display_image_url,
+                'color_family': obj.color_family,
+                'analyzed_tone_tag': obj.tone_tag,
+                'hex_code': obj.hex_code,
+                'rgb_r': obj.rgb_r,
+                'rgb_g': obj.rgb_g,
+                'rgb_b': obj.rgb_b,
+                'brightness': obj.brightness,
+                'saturation': obj.saturation,
+                'coolness': obj.coolness,
+                'warmth': obj.warmth,
+                'depth': obj.depth,
+                'softness': obj.softness,
+                'contrast': obj.contrast,
+                'match_score': obj.match_score,
+                'grade': '',
+                'reason': obj.reason,
+                'representative_offer': {
+                    'id': obj.id,
+                    'mall_name': obj.mall_name,
+                    'price': obj.price,
+                    'product_url': obj.product_url,
+                    'naver_product_id': obj.naver_product_id,
+                    'is_representative': True,
+                    'created_at': obj.created_at,
+                } if obj.product_url or obj.price else None,
+                'offers': [],
+                'tone_scores': [],
+            }
         option_serializer = ProductOptionSerializer(context=self.context)
         best = max(options, key=lambda option: option_serializer.get_match_score(option))
         return ProductOptionSerializer(best, context=self.context).data
 
     def get_min_price(self, obj):
         prices = self._prices(obj)
-        return min(prices) if prices else 0
+        return min(prices) if prices else obj.price or 0
 
     def get_max_price(self, obj):
         prices = self._prices(obj)
-        return max(prices) if prices else 0
+        return max(prices) if prices else obj.price or 0
 
     def _prices(self, obj):
         return [
