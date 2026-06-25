@@ -47,7 +47,7 @@ export const getPersonalizedRecommendedProducts = async (params = {}) => {
 }
 
 export const getRecommendationColorMatching = async (productId, params = {}) => {
-  const response = await axios.get(`${API_BASE_URL}/api/recommendations/${productId}/color-matching/`, {
+  const response = await axios.get(`${API_BASE_URL}/api/products/${productId}/color-analysis/`, {
     headers: authHeaders(),
     params,
   })

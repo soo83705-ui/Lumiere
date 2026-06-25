@@ -87,7 +87,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-%4xdnn79bgj-znfo^6^5z30bcr
 DEBUG = env_flag('DEBUG', True)
 OPENAI_DIAGNOSIS_FALLBACK_ON_ERROR = env_flag('OPENAI_DIAGNOSIS_FALLBACK_ON_ERROR', DEBUG)
 
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['localhost', '127.0.0.1', 'magda-semianimated-idyllically.ngrok-free.dev',])
 
 
 # Application definition
@@ -222,8 +222,21 @@ CORS_ALLOWED_ORIGINS = env_list(
     [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
+        'https://lumiere.pppp000310.workers.dev',
+        'https://magda-semianimated-idyllically.ngrok-free.dev',
+
     ],
 )
+
+# os 모듈을 사용할 때의 정석 방어 코드
+cors_origins_str = os.getenv('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = cors_origins_str.split(',') if cors_origins_str else []
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'ngrok-skip-browser-warning',  # 프론트엔드에서 보내는 커스텀 헤더 허용
+    'authorization',               # JWT 토큰 인증을 위한 헤더 허용
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -243,8 +256,8 @@ CSRF_TRUSTED_ORIGINS = env_list(
     [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
+        'https://lumiere.pppp000310.workers.dev',
+        'https://magda-semianimated-idyllically.ngrok-free.dev',
     ],
 )
 

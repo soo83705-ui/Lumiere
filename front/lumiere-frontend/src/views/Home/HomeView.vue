@@ -228,32 +228,41 @@
               <p v-if="product.optionName" class="option-name">
                 {{ product.optionName }}
               </p>
+              <p v-if="product.reasonTitle" class="reason-title">{{ product.reasonTitle }}</p>
               <p class="reason">{{ product.reason }}</p>
             </div>
           </div>
 
           <div class="flip-card-face flip-card-back">
-            <span class="back-label">AI Recommendation</span>
-            <h4>{{ product.name }}</h4>
-            <p>{{ product.detailReason || product.reason }}</p>
-            <p v-if="product.usageTip" class="usage-tip">
-              {{ product.usageTip }}
-            </p>
-
-            <div class="back-meta">
-              <span :class="statusClass(product.matchStatus)">
-                {{ product.matchStatus || 'COLOR' }}
-              </span>
-              <span>{{ product.score }}% match</span>
+            <span class="back-label">{{ product.aiPickLabel }}</span>
+            <div class="back-scroll">
+              <h4>{{ product.name }}</h4>
+              <strong v-if="product.reasonTitle" class="back-reason-title">{{ product.reasonTitle }}</strong>
+              <p>{{ product.detailReason || product.reason }}</p>
+              <p v-if="product.usageTip" class="usage-tip">
+                {{ product.usageTip }}
+              </p>
+              <div v-if="product.reasonTags.length" class="reason-tags">
+                <span v-for="tag in product.reasonTags" :key="tag">{{ tag }}</span>
+              </div>
             </div>
 
-            <button
-              type="button"
-              tabindex="-1"
-              @click.stop="goToProductDetail(product)"
-            >
-              제품 자세히 보기
-            </button>
+            <div class="back-actions">
+              <div class="back-meta">
+                <span :class="statusClass(product.matchStatus)">
+                  {{ product.matchStatus || 'COLOR' }}
+                </span>
+                <span>{{ product.score }}% match</span>
+              </div>
+
+              <button
+                type="button"
+                tabindex="-1"
+                @click.stop="goToProductDetail(product)"
+              >
+                제품 자세히 보기
+              </button>
+            </div>
           </div>
         </div>
       </article>
@@ -393,6 +402,24 @@ watch(
 function normalizeHomeProduct(item, index) {
   const category = String(item.category || item.category_key || '').toUpperCase()
   const bestOption = item.best_option || {}
+  const reasonText =
+    item.reason_text ||
+    item.short_reason ||
+    item.summary_reason ||
+    item.reason ||
+    item.match_reason ||
+    bestOption.short_reason ||
+    '내 톤과 자연스럽게 어울리는 컬러로 추천된 제품이에요.'
+  const detailReason =
+    item.reason_text ||
+    item.detail_reason ||
+    bestOption.detail_reason ||
+    item.short_reason ||
+    item.summary_reason ||
+    ''
+  const reasonTags = Array.isArray(item.reason_tags)
+    ? item.reason_tags.filter(Boolean).slice(0, 3)
+    : []
   const imageClass = category.includes('EYE')
     ? 'eye'
     : category.includes('CHEEK')
@@ -413,9 +440,14 @@ function normalizeHomeProduct(item, index) {
     optionName: [bestOption.option_no, bestOption.option_name].filter(Boolean).join(' '),
     matchStatus: item.match_status || bestOption.match_status || bestOption.grade || '',
     score: Math.min(99, Math.max(0, Math.round(Number(item.match_score || bestOption.match_score || 0) || 0))),
-    reason: item.short_reason || item.summary_reason || item.reason || item.match_reason || bestOption.short_reason || '내 톤과 가까운 색감으로 추천된 제품이에요.',
-    detailReason: item.detail_reason || bestOption.detail_reason || item.short_reason || item.summary_reason || '',
     usageTip: item.usage_tip || bestOption.usage_tip || '',
+    hybridScore: Math.min(100, Math.max(0, Math.round(Number(item.hybrid_score || item.final_score || 0) || 0))),
+    finalScore: Math.min(100, Math.max(0, Math.round(Number(item.final_score || item.hybrid_score || 0) || 0))),
+    aiPickLabel: item.ai_pick_label || "AI's Pick",
+    reasonTitle: item.reason_title || '',
+    reason: reasonText,
+    detailReason,
+    reasonTags,
     imageUrl: item.image_url || bestOption.image_url || item.image || item.thumbnail || item.thumbnail_url || '',
     productUrl: item.product_url || bestOption.product_url || bestOption.representative_offer?.product_url || '',
     imageClass,
@@ -1051,14 +1083,25 @@ const resolveMediaUrl = (url) => {
 }
 
 .flip-card-back {
-  grid-template-rows: auto;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   padding: 22px;
   background:
     radial-gradient(circle at 18% 12%, rgba(255, 240, 241, 0.95), transparent 34%),
     linear-gradient(135deg, #fffaf7, #fff0f1);
   transform: rotateY(180deg);
+}
+
+.back-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  scrollbar-width: thin;
 }
 
 .back-label {
@@ -1099,6 +1142,13 @@ const resolveMediaUrl = (url) => {
   gap: 7px;
 }
 
+.back-actions {
+  flex-shrink: 0;
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+}
+
 .back-meta span {
   padding: 6px 9px;
   border-radius: 999px;
@@ -1109,7 +1159,6 @@ const resolveMediaUrl = (url) => {
 }
 
 .flip-card-back button {
-  margin-top: auto;
   min-height: 40px;
   border: 0;
   border-radius: 9px;
@@ -1201,10 +1250,12 @@ const resolveMediaUrl = (url) => {
 }
 
 .card-copy {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   padding: 16px;
 }
 
@@ -1290,15 +1341,52 @@ const resolveMediaUrl = (url) => {
   white-space: nowrap;
 }
 
+.reason-title,
+.back-reason-title {
+  color: #8b3a4a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.reason-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.back-reason-title {
+  display: block;
+  margin: 4px 0 0;
+}
+
 .reason {
   font-size: 13px;
   color: #6b5f5b;
   line-height: 1.55;
   margin: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.reason-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reason-tags span {
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #fff3f5;
+  color: #8b3a4a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 @media (hover: none), (max-width: 720px) {

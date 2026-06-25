@@ -110,7 +110,7 @@
 <script setup>
 import lumiereLogo from '@/assets/images/lumiere_logo.png'
 
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import UserAvatar from '@/components/user/UserAvatar.vue'
@@ -131,9 +131,12 @@ const isNotificationOpen = ref(false)
 const searchKeyword = ref('')
 const searchInput = ref(null)
 
-const isLoggedIn = computed(() => Boolean(localStorage.getItem('access_token')))
-const userName = computed(() => currentUser.value?.nickname || currentUser.value?.username || '사용자')
-const likedCount = computed(() => engagementStore.likedCount)
+const isLoggedIn = ref(Boolean(localStorage.getItem('access_token')))
+
+// 🚨 런타임 에러(null/undefined) 방지를 위해 옵셔널 체이닝(?.)을 꼼꼼하게 적용
+const userName = computed(() => currentUser?.value?.nickname || currentUser?.value?.username || '사용자')
+const likedCount = computed(() => engagementStore?.likedCount || 0)
+
 const notificationItems = computed(() => {
   if (!isLoggedIn.value) {
     return [
@@ -146,7 +149,8 @@ const notificationItems = computed(() => {
     ]
   }
 
-  if (!notificationStore.items.length) {
+  // items가 아직 초기화되지 않았을 때 발생할 수 있는 length 에러 방지
+  if (!notificationStore?.items?.length) {
     return [
       {
         key: 'empty',
@@ -159,15 +163,16 @@ const notificationItems = computed(() => {
   }
 
   return notificationStore.items.map((notice) => ({
-    key: notice.id,
-    id: notice.id,
-    title: notice.title,
-    description: notice.body,
-    route: notice.route,
-    isRead: notice.is_read,
+    key: notice?.id || Math.random(),
+    id: notice?.id,
+    title: notice?.title || '알림',
+    description: notice?.body || '',
+    route: notice?.route,
+    isRead: notice?.is_read,
   }))
 })
-const notificationCount = computed(() => notificationStore.unreadCount)
+
+const notificationCount = computed(() => notificationStore?.unreadCount || 0)
 
 const toggleSearch = async () => {
   isSearchOpen.value = !isSearchOpen.value
@@ -190,8 +195,9 @@ const toggleNotifications = async () => {
   if (!willOpen || !isLoggedIn.value) return
 
   try {
-    await notificationStore.loadNotifications({ force: true })
-    await notificationStore.markAllRead()
+    // optional chaining으로 호출
+    await notificationStore?.loadNotifications?.({ force: true })
+    await notificationStore?.markAllRead?.()
   } catch (error) {
     console.warn('알림 읽음 상태를 업데이트하지 못했습니다.', error)
   }
@@ -199,14 +205,14 @@ const toggleNotifications = async () => {
 
 const goNotice = async (notice) => {
   isNotificationOpen.value = false
-  if (notice.id && !notice.isRead) {
+  if (notice?.id && !notice?.isRead) {
     try {
-      await notificationStore.markRead(notice.id)
+      await notificationStore?.markRead?.(notice.id)
     } catch (error) {
       console.warn('알림을 읽음 처리하지 못했습니다.', error)
     }
   }
-  if (notice.route) router.push(notice.route)
+  if (notice?.route) router.push(notice.route)
 }
 
 const submitSearch = () => {
@@ -222,32 +228,52 @@ const submitSearch = () => {
   closeSearch()
 }
 
+const updateAuthStatus = async () => {
+  const hasToken = Boolean(localStorage.getItem('access_token'))
+  isLoggedIn.value = hasToken
+
+  if (hasToken && !currentUser?.value?.username) {
+    try {
+      // 함수가 존재하는지 안전하게 확인 후 실행
+      if (typeof loadCurrentUser === 'function') await loadCurrentUser({ force: true })
+      if (typeof loadLatestDiagnosisForProfile === 'function') await loadLatestDiagnosisForProfile()
+      
+      await Promise.allSettled([
+        engagementStore?.loadLikedOptions?.({ force: true }),
+        notificationStore?.loadNotifications?.({ force: true }),
+        notificationStore?.refreshUnreadCount?.(),
+      ])
+    } catch (error) {
+      console.error('사용자 정보를 가져오지 못했습니다.', error)
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        logout()
+      }
+    }
+  }
+}
+
 const logout = () => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
-  clearCurrentUser()
-  clearResolvedProfileImage()
-  engagementStore.$reset?.()
-  notificationStore.$reset?.()
-  window.location.href = '/'
+  
+  if (typeof clearCurrentUser === 'function') clearCurrentUser()
+  if (typeof clearResolvedProfileImage === 'function') clearResolvedProfileImage()
+  
+  engagementStore?.$reset?.()
+  notificationStore?.$reset?.()
+  isLoggedIn.value = false
+  router.push('/')
 }
 
 onMounted(async () => {
-  if (!isLoggedIn.value) return
-
-  try {
-    await loadCurrentUser({ force: true })
-    await loadLatestDiagnosisForProfile()
-  } catch (error) {
-    console.error('사용자 정보를 가져오지 못했습니다.', error)
-    logout()
+  window.addEventListener('auth-updated', updateAuthStatus)
+  if (isLoggedIn.value) {
+    await updateAuthStatus()
   }
+})
 
-  await Promise.allSettled([
-    engagementStore.loadLikedOptions({ force: true }),
-    notificationStore.loadNotifications({ force: true }),
-    notificationStore.refreshUnreadCount(),
-  ])
+onUnmounted(() => {
+  window.removeEventListener('auth-updated', updateAuthStatus)
 })
 </script>
 

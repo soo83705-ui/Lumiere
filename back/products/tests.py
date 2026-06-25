@@ -345,6 +345,14 @@ class RecommendationColorMatchingApiTests(APITestCase):
         self.assertEqual(first['best_option']['id'], self.option.id)
         self.assertIn(first['match_status'], {'BEST', 'GOOD', 'CAUTION'})
         self.assertTrue(first['short_reason'])
+        self.assertEqual(first['match_score'], first['personal_color_score'])
+        self.assertEqual(first['hybrid_score_sources']['ranking'], 'match_score')
+        self.assertIsInstance(first['hybrid_score'], int)
+        self.assertIsInstance(first['final_score'], int)
+        self.assertTrue(first['ai_pick_label'])
+        self.assertTrue(first['reason_title'])
+        self.assertTrue(first['reason_text'])
+        self.assertIsInstance(first['reason_tags'], list)
 
     def test_personalized_products_excludes_avoid_matches(self):
         response = self.client.get('/api/recommendations/personalized-products/?limit=12&per_category=2&tone_key=spring_warm_light')

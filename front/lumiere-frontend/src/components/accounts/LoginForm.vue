@@ -20,38 +20,65 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRoute } from 'vue-router'
+// 1. useRouter를 추가로 import 해줘
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { API_BASE_URL } from '@/config/api'
 
 const emit = defineEmits(['goToFindPassword'])
 
-// email 대신 username 사용
 const username = ref('')
 const password = ref('')
 const route = useRoute()
+// 2. router 객체 초기화
+const router = useRouter()
 
 const handleLogin = async () => { 
   const loginData = {
-    username: username.value, // 입력받은 진짜 아이디를 보냄
-    password: password.value
+    username: username.value,
+    password: password.value,
   }
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/accounts/jwt-login/`, loginData)
-    
-    localStorage.setItem('access_token', response.data.access)
-    localStorage.setItem('refresh_token', response.data.refresh)
-    
+    const response = await axios.post(
+      `${API_BASE_URL}/accounts/jwt-login/`,
+      loginData,
+      { headers: { 'ngrok-skip-browser-warning': 'true' } },
+    )
+
+    const accessToken = response.data.access || response.data.access_token || response.data.token?.access
+    const refreshToken = response.data.refresh || response.data.refresh_token || response.data.token?.refresh
+
+    if (!accessToken) {
+      alert('로그인 응답 형식이 올바르지 않습니다.')
+      return
+    }
+
+    localStorage.setItem('access_token', accessToken)
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken)
+    }
+
     alert('로그인에 성공했습니다!')
 
-    const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
+    // 3. 리다이렉트 경로 보정 및 라우터 전환 로직
+    let redirectPath = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
       ? route.query.redirect
       : '/'
-    window.location.href = redirect
+
+    // 외부 유입 시 /login 자체가 리다이렉트로 잡혀 튕기는 루프 방지
+    if (redirectPath.includes('/login')) {
+      redirectPath = '/'
+    }
+
+    // window.location.href 대신 Vue 라우터 사용
+    router.push(redirectPath).then(() => {
+      // 컴포넌트가 마운트된 상태에서도 헤더가 갱신되도록 이벤트 발송
+      window.dispatchEvent(new Event('auth-updated'))
+    })
 
   } catch (error) {
-    console.error("로그인 실패:", error.response?.data)
+    console.error('로그인 실패:', error.response?.data || error)
     alert('아이디 또는 비밀번호가 올바르지 않습니다.')
   }
 }

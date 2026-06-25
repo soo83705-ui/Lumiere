@@ -4,7 +4,11 @@ import { API_BASE_URL } from '@/config/api'
 
 const authHeaders = () => {
   const token = localStorage.getItem('access_token')
-  return token ? { Authorization: `Bearer ${token}` } : {}
+
+  return {
+    'ngrok-skip-browser-warning': 'true',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
 }
 
 export const getCurrentUser = async () => {

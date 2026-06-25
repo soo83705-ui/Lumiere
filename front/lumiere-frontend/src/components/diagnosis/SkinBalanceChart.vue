@@ -39,7 +39,7 @@
         dominant-baseline="middle"
         class="axis-label"
       >
-        {{ label.name }}
+        {{ label.displayLabel }}
       </text>
     </svg>
 
@@ -127,7 +127,7 @@ const valuePointList = computed(() =>
 const labelPoints = computed(() =>
   normalizedAxes.value.map((axis, index) => {
     const point = pointAt(index, 1, labelRadius)
-    return { ...axis, ...point }
+    return { ...axis, displayLabel: axis.name || axis.label || axis.key, ...point }
   }),
 )
 </script>
