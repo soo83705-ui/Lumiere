@@ -1,15 +1,10 @@
 <div align="center">
 
-<img src="Lumiere/docs/lumiere_logo.png" alt="Lumière Logo" width="300">
+  <img src="./docs/lumiere_logo.png" alt="Lumière Logo" width="300" />
 
-### AI 기반 퍼스널 컬러 진단 및 화장품 추천 서비스
+  <h3>AI 기반 퍼스널 컬러 진단 및 화장품 추천 서비스</h3>
 
-**나만의 분위기를 찾는 가장 똑똑한 방법**
-
-</div>
-### AI 기반 퍼스널 컬러 진단 및 화장품 추천 서비스
-
-**나만의 분위기를 찾는 가장 똑똑한 방법**
+  <p><b>나만의 분위기를 찾는 가장 똑똑한 방법</b></p>
 
 </div>
 
@@ -77,26 +72,37 @@ Lumière는 얼굴 이미지 기반 퍼스널 컬러 진단 결과를 실제 화
 
 | 화면 | Preview |
 |---|---|
-| Home | ![Home](Lumiere/docs/screenshots/home.png) |
-| Personal Color Diagnosis | ![Diagnosis Upload](Lumiere/docs/screenshots/diagnosis-upload.png) |
-| Diagnosis Result | ![Diagnosis Result](Lumiere/docs/screenshots/diagnosis-result.png) |
-| Product Analysis | ![Product Analysis](Lumiere/docs/screenshots/product-analysis.png) |
-| Today’s Recommendation | ![Recommendation](Lumiere/docs/screenshots/recommendation.png) |
-| Community | ![Community](Lumiere/docs/screenshots/community.png) |
-| MyPage | ![MyPage](Lumiere/docs/screenshots/mypage.png) |
+| Home | ![Home](docs/screenshots/home.png) |
+| Personal Color Diagnosis | ![Diagnosis Upload](docs/screenshots/diagnosis-upload.png) |
+| Diagnosis Result | ![Diagnosis Result](docs/screenshots/diagnosis-result.png) |
+| Product Analysis | ![Product Analysis](docs/screenshots/product-analysis.png) |
+| Today’s Recommendation | ![Recommendation](docs/screenshots/recommendation.png) |
+| Community | ![Community](docs/screenshots/community.png) |
+| MyPage | ![MyPage](docs/screenshots/mypage.png) |
 
 ---
 
 ## Tech Stack
 
+> Vue, Django, Django REST Framework는 팀원 모두가 함께 다룬 공통 개발 기술입니다.  
+> 배포 및 운영 환경 구성은 박성은이 주도하여 수행했습니다.
+
 | Area | Stack |
 |---|---|
 | Frontend | Vue 3, Vite, JavaScript, CSS, Pinia, Vue Router, Axios |
 | Backend | Python 3.13.5, Django 5.2.4, Django REST Framework, Simple JWT |
-| Database | SQLite for local development, `DATABASE_URL` 기반 PostgreSQL 호환 설정 |
-| AI | OpenAI-compatible API via GMS, Vision analysis, GenAI image generation |
-| Deployment | Cloudflare Workers/Pages static assets, Wrangler, Django backend tunnel/ngrok 또는 별도 서버 |
-| Tools | Git, GitHub/GitLab, Whitenoise, Gunicorn/Uvicorn |
+| Database | SQLite for local development, `DATABASE_URL` 기반 PostgreSQL 호환 설정, Django ORM |
+| AI / GenAI | OpenAI-compatible API via GMS, Vision Analysis, GenAI Image Generation, Prompt Engineering |
+| Recommendation | Personal Color Matching Score, Option-based Recommendation, Hybrid Score Design |
+| Deployment / DevOps | Cloudflare Workers/Pages, Wrangler, ngrok/Tunnel, Static Build, Environment Variables, CORS/CSRF Configuration |
+| Tools | Git, GitHub/GitLab, npm, pip, Chrome DevTools, Postman |
+
+### 기술 역할 구분
+
+| 구분 | 내용 |
+|---|---|
+| 공동 사용 기술 | Vue 3, Django, Django REST Framework, REST API 연동, DB 모델링, 화면/기능 구현 |
+| 박성은 주도 영역 | AI 진단 파이프라인, 상품 이미지/옵션 색상 분석, 추천 점수 설계, Cloudflare 배포, API 연결 및 CORS/환경변수 트러블슈팅 |
 
 ---
 
@@ -399,14 +405,58 @@ lumiere260625/
 
 ## Team / Role
 
-담당 역할:
+### Project Members
 
-- AI 퍼스널 컬러 진단 파이프라인 설계
-- 상품 이미지/옵션 색상 분석 로직 구현
-- 옵션 단위 추천 및 매칭 점수 설계
-- AI’s Pick 추천 문구와 설명 레이어 구성
-- Cloudflare 배포 및 API 연결 문제 해결
-- 프로젝트 문서화 및 포트폴리오 README 정리
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center" width="220">
+      <!-- TODO: SUJIN_GITHUB_ID를 실제 GitHub 아이디로 변경하세요. -->
+      <a href="https://github.com/soo83705-ui">
+        <img src="https://github.com/soo83705-ui.png?size=100" width="80" height="80" alt="김수진 GitHub profile" />
+      </a>
+      <br />
+      <a href="https://github.com/SUJIN_GITHUB_ID"><b>김수진</b></a>
+      <br />
+      <sub>Frontend · Recommendation · Service Flow</sub>
+      <br /><br />
+      <img src="https://img.shields.io/badge/Vue_3-4FC08D?style=flat&logo=vuedotjs&logoColor=white" alt="Vue 3" />
+      <img src="https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white" alt="Django" />
+      <img src="https://img.shields.io/badge/DRF-A30000?style=flat&logo=django&logoColor=white" alt="DRF" />
+    </td>
+    <td align="center" width="220">
+      <a href="https://github.com/bada0310">
+        <img src="https://github.com/bada0310.png?size=100" width="80" height="80" alt="박성은 GitHub profile" />
+      </a>
+      <br />
+      <a href="https://github.com/bada0310"><b>박성은</b></a>
+      <br />
+      <sub>AI · Backend · Recommendation · Deployment</sub>
+      <br /><br />
+      <img src="https://img.shields.io/badge/Vue_3-4FC08D?style=flat&logo=vuedotjs&logoColor=white" alt="Vue 3" />
+      <img src="https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white" alt="Django" />
+      <img src="https://img.shields.io/badge/Cloudflare-F38020?style=flat&logo=cloudflare&logoColor=white" alt="Cloudflare" />
+    </td>
+  </tr>
+</table>
+
+</div>
+
+### 공동 담당 영역
+
+- Vue 3 기반 화면 구현 및 사용자 흐름 구성
+- Django / Django REST Framework 기반 API 개발 및 프론트엔드 연동
+- 퍼스널 컬러 진단, 상품 분석, 추천, 커뮤니티, 마이페이지 기능 개선
+- 데이터 모델 구조화 및 화면-API 응답 형식 정리
+- 기능 테스트, 오류 재현, UI/UX 개선 의견 반영
+
+### 개인 담당 영역
+
+| 이름 | 주요 담당 |
+|---|---|
+| 김수진 | 서비스 기획 및 요구사항 정리, 사용자 흐름 설계, 화면 구성 개선, Vue/Django/DRF 기반 기능 구현 및 API 연동 |
+| 박성은 | AI 퍼스널 컬러 진단 파이프라인 설계, 상품 이미지/옵션 색상 분석 로직, 옵션 단위 추천 및 AI’s Pick 설명 구성, Cloudflare 배포, Wrangler 빌드/배포, ngrok/Tunnel 기반 백엔드 외부 연결, CORS/CSRF 및 환경변수 문제 해결, README 문서화 |
 
 ---
 
@@ -416,7 +466,7 @@ lumiere260625/
 - `match_score` 기반 안정 정렬 위에 하이브리드 점수 필드를 추가해 확장 가능한 추천 구조를 만들었습니다.
 - AI’s Pick 문구를 통해 점수를 사용자 친화적인 뷰티 언어로 변환했습니다.
 - AI Vision 실패 시 로컬 색상 추출 fallback을 제공해 분석 흐름이 완전히 끊기지 않도록 구성했습니다.
-- 프론트 배포, 백엔드 API 연결, CORS/CSRF 설정 등 실제 배포 디버깅 경험을 쌓았습니다.
+- Cloudflare 기반 프론트 배포, 백엔드 API 연결, CORS/CSRF 및 환경변수 설정을 직접 수행하며 실제 배포 디버깅 경험을 쌓았습니다.
 
 ---
 
